@@ -317,12 +317,7 @@ router.post('/',
 
       const position = (maxPosition.max || 0) + 1;
 
-      console.log('🚀 Task creation data:', {
-        title: req.body.title,
-        diaryEntryId: req.body.diaryEntryId,
-        columnId: req.body.columnId,
-        requestBody: req.body
-      });
+      // Creating task
 
       const result = db.prepare(`
         INSERT INTO tasks (title, description, priority, column_id, assignee_id, due_date, position, diary_entry_id)
@@ -338,7 +333,7 @@ router.post('/',
         req.body.diaryEntryId || null
       );
       
-      console.log('✅ Task created with ID:', result.lastInsertRowid, 'diary_entry_id:', req.body.diaryEntryId);
+      // Task created successfully
 
       const task = db.prepare(`
         SELECT t.*, u.name as assignee_name, u.email as assignee_email,

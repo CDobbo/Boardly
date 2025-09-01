@@ -34,7 +34,7 @@ const requireAdmin = async (req, res, next) => {
   
   // Temporary: check database for role if not in token
   if (req.user && !req.user.role) {
-    console.log('Role not in token, checking database...');
+    // Checking user role in database
     try {
       const { db } = await import('../db/init.js');
       const user = db.prepare('SELECT role FROM users WHERE id = ?').get(req.user.id);

@@ -14,7 +14,7 @@ router.get('/',
     query('search').optional().trim()
   ],
   (req, res, next) => {
-    console.log('🔵 Diary API called by user:', req.user?.id);
+    // Diary API accessed
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -64,7 +64,7 @@ router.get('/',
       // Debug log for entry 611
       const entry611 = entriesWithTasks.find(e => e.id === 611);
       if (entry611) {
-        console.log('📔 Diary API - Entry 611 has', entry611.linkedTasks?.length || 0, 'linked tasks');
+        // Entry linked tasks processed
       }
       
       // Add cache-busting headers

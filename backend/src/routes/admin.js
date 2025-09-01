@@ -10,8 +10,7 @@ const router = express.Router();
 // Get all users
 router.get('/users', requireAdmin, (req, res, next) => {
   try {
-    console.log('=== ADMIN GET USERS ===');
-    console.log('Admin request from:', req.user.email);
+    // Admin retrieving user list
     
     const users = db.prepare(`
       SELECT id, email, name, role, created_at, updated_at
@@ -19,8 +18,7 @@ router.get('/users', requireAdmin, (req, res, next) => {
       ORDER BY created_at DESC
     `).all();
     
-    console.log('Found users count:', users.length);
-    console.log('First 3 users:', users.slice(0, 3).map(u => u.email));
+    // User list retrieved successfully
     
     res.json(users);
   } catch (error) {
@@ -174,7 +172,7 @@ router.delete('/cleanup-test-users', requireAdmin, (req, res, next) => {
       WHERE email LIKE 'test%@example.com'
     `).run();
     
-    console.log('Cleaned up test users:', result.changes);
+    // Test users cleaned up
     res.json({ 
       success: true, 
       message: `Cleaned up ${result.changes} test users` 
@@ -207,7 +205,7 @@ router.post('/backup', requireAdmin, (req, res, next) => {
     const stats = fs.statSync(backupPath);
     const fileSizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
     
-    console.log(`Database backup created: ${backupFileName} (${fileSizeInMB} MB)`);
+    // Database backup created
     
     res.json({
       success: true,

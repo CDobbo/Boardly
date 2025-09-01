@@ -88,10 +88,7 @@ export const Goals: React.FC = () => {
   };
 
   const handleToggleComplete = async (goal: Goal) => {
-    console.log('=== GOAL TOGGLE DEBUG ===');
-    console.log('Button clicked for goal:', goal.id, goal.title);
-    console.log('Current completed status:', goal.completed, typeof goal.completed);
-    console.log('Will toggle to:', !goal.completed);
+    // Toggling goal completion status
     
     try {
       const updateData = {
@@ -101,46 +98,36 @@ export const Goals: React.FC = () => {
         completed: !goal.completed,
         target_date: goal.target_date,
       };
-      console.log('Sending update data:', updateData);
-      console.log('API URL will be: PUT /goals/' + goal.id);
+      // Preparing update data
       
-      console.log('Making API call...');
-      console.log('Final API call: PUT /goals/' + goal.id);
-      console.log('Request payload:', JSON.stringify(updateData, null, 2));
+      // Updating goal via API
       
       const response = await goalsAPI.update(String(goal.id), updateData);
-      console.log('API call successful! Response:', response);
-      console.log('Response data:', response.data);
-      console.log('Response status:', response.status);
-      console.log('Response completed field:', response.data.completed, typeof response.data.completed);
+      // Goal updated successfully
       
       // Convert SQLite integer response to boolean
       const updatedGoal = {
         ...response.data,
         completed: Boolean(response.data.completed)
       };
-      console.log('Converted goal:', updatedGoal);
-      console.log('Converted completed field:', updatedGoal.completed, typeof updatedGoal.completed);
-      console.log('Updating local state...');
+      // Processing goal update response
       
       const newGoals = goals.map(g => {
         if (g.id === goal.id) {
-          console.log('Updating goal in array:', g.id, 'from completed:', g.completed, 'to completed:', updatedGoal.completed);
+          // Updating goal in local array
           return updatedGoal;
         }
         return g;
       });
       
-      console.log('Old goals array length:', goals.length);
-      console.log('New goals array length:', newGoals.length);
-      console.log('About to call setGoals...');
+      // Updating goals state
       
       setGoals(newGoals);
-      console.log('setGoals called successfully');
+      // Goals state updated
       
       // Force a re-render by updating the state again after a brief delay
       setTimeout(() => {
-        console.log('Forcing re-render...');
+        // Forcing component re-render
         setGoals([...newGoals]);
       }, 100);
       

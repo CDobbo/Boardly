@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5005/api';
-console.log('🔗 API Configuration - Using URL:', API_URL);
+// API configured
 
 const api = axios.create({
   baseURL: API_URL,
@@ -152,7 +152,7 @@ export const diaryAPI = {
     category?: 'meeting' | 'action' | 'note' | 'decision' | 'follow-up';
     search?: string;
   }) => {
-    console.log('🔗 diaryAPI.getAll called with baseURL:', api.defaults.baseURL, 'params:', params);
+    // Fetching diary entries
     return api.get('/diary', { params });
   },
   getByDate: () => api.get('/diary/by-date'),

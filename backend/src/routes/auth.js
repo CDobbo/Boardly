@@ -55,28 +55,21 @@ router.post('/login',
       }
 
       const { email, password } = req.body;
-      console.log('=== LOGIN DEBUG ===');
-      console.log('Login attempt for:', email);
-      console.log('Password provided:', password);
+      // Login attempt for user authentication
 
       const user = db.prepare('SELECT id, email, password, name, role FROM users WHERE email = ?').get(email);
       if (!user) {
-        console.log('User not found for email:', email);
         return res.status(401).json({ error: 'Invalid credentials' });
       }
-      console.log('User found:', user.email, 'ID:', user.id);
 
       const validPassword = await bcrypt.compare(password, user.password);
-      console.log('Password valid:', validPassword);
       if (!validPassword) {
-        console.log('Invalid password for user:', email);
         return res.status(401).json({ error: 'Invalid credentials' });
       }
 
       const token = generateToken(user);
       delete user.password;
       
-      console.log('Login response for', email, '- user data:', user);
       res.json({ user, token });
     } catch (error) {
       next(error);
@@ -93,7 +86,6 @@ router.get('/me', authenticateToken, (req, res, next) => {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    console.log('/me response for user id', req.user.id, '- user data:', user);
     res.json(user);
   } catch (error) {
     next(error);

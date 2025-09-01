@@ -56,8 +56,7 @@ const TestResults: React.FC = () => {
   const fetchResults = async () => {
     try {
       const token = localStorage.getItem('token');
-      console.log('Fetching test results...');
-      console.log('Token for results:', !!token);
+      // Fetching test results
       
       const response = await fetch('http://localhost:5002/api/tests/results', {
         headers: {
@@ -65,11 +64,11 @@ const TestResults: React.FC = () => {
         }
       });
       
-      console.log('Results response status:', response.status);
+      // Response received
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched results:', data);
+        // Results fetched
         setResults(data);
       } else {
         const errorText = await response.text();
@@ -93,7 +92,7 @@ const TestResults: React.FC = () => {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Status check result:', data);
+        // Status check complete
         setRunning(data.running);
         
         if (!data.running && pollingInterval) {
@@ -119,8 +118,7 @@ const TestResults: React.FC = () => {
     console.log('Suite:', suite);
     
     const token = localStorage.getItem('token');
-    console.log('Token exists:', !!token);
-    console.log('Token preview:', token ? token.substring(0, 20) + '...' : 'null');
+    // Checking authentication token
     
     if (!token) {
       console.error('No authentication token found');

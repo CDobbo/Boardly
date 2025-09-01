@@ -89,7 +89,7 @@ router.get('/:id', [
 
 // Create a new event
 router.post('/', (req, res, next) => {
-  console.log('POST /api/events hit with body:', req.body);
+  // Processing event creation request
   try {
     // Validation temporarily removed
 
@@ -105,7 +105,7 @@ router.post('/', (req, res, next) => {
       }
     }
 
-    console.log('Creating event with data:', JSON.stringify(req.body));
+    // Creating new event
 
     // Validate end_date is after start_date
     if (req.body.end_date && new Date(req.body.end_date) <= new Date(req.body.start_date)) {
@@ -124,8 +124,7 @@ router.post('/', (req, res, next) => {
       req.user.id
     ];
     
-    console.log('Insert values:', insertValues);
-    console.log('Insert value types:', insertValues.map(v => typeof v));
+    // Event data prepared for insertion
 
     const result = db.prepare(`
       INSERT INTO events (title, description, start_date, end_date, all_day, event_type, priority, project_id, user_id)

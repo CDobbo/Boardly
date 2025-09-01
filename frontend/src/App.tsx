@@ -19,10 +19,10 @@ import { TaskUpdateDebugger } from './debug/TaskUpdateDebugger';
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
 
-  console.log('[PrivateRoute] User:', user, 'Loading:', loading);
+  // Checking authentication status
 
   if (loading) {
-    console.log('[PrivateRoute] Still loading...');
+    // Authentication loading
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -31,11 +31,11 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   }
 
   if (!user) {
-    console.log('[PrivateRoute] No user, redirecting to /login');
+    // Redirecting to login
     return <Navigate to="/login" />;
   }
 
-  console.log('[PrivateRoute] User authenticated, rendering children');
+  // User authenticated
   return <>{children}</>;
 };
 

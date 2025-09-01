@@ -42,11 +42,7 @@ router.put('/:id', authenticateToken, (req, res, next) => {
   try {
     const { id } = req.params;
     const { title, description, category, completed, target_date } = req.body;
-    console.log('=== GOALS UPDATE DEBUG ===');
-    console.log('Goal ID:', id);
-    console.log('User ID:', req.user.id);
-    console.log('Request body:', req.body);
-    console.log('Completed value:', completed, typeof completed);
+    // Processing goal update
     
     const result = db.prepare(`
       UPDATE goals 
