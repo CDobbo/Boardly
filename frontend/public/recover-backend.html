@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backend Data Recovery - chris@chris.com</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 800px;
+      width: 100%;
+      padding: 40px;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    .warning {
+      background: #fef2f2;
+      border: 2px solid #ef4444;
+      color: #991b1b;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+    .status-box {
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+    .success { color: #10b981; }
+    .error { color: #ef4444; }
+    .info { color: #3b82f6; }
+    .warning { color: #f59e0b; }
+    .header { font-weight: bold; color: #6366f1; margin-top: 15px; }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-right: 10px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .summary {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f0fdf4;
+      border: 2px solid #10b981;
+      border-radius: 8px;
+    }
+    .summary h3 {
+      color: #059669;
+      margin-bottom: 10px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .stat {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #d1fae5;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #059669;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 5px;
+    }
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #6366f1;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+      display: none;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <span>🚨</span>
+      Backend Data Recovery System
+    </h1>
+    <div class="subtitle">Direct server-side recovery with admin privileges</div>
+    
+    <div class="warning">
+      ⚠️ This will reorganize ALL tasks for chris@chris.com into "Daily Tasks" and "AI Tasks" projects only.
+    </div>
+
+    <div class="button-group">
+      <button id="startBtn" onclick="startRecovery()">🚀 Start Recovery</button>
+      <button id="clearBtn" onclick="clearLog()" style="background: #ef4444;">Clear Log</button>
+    </div>
+
+    <div class="loader" id="loader"></div>
+
+    <div id="status" class="status-box">
+      <div class="log-entry info">Ready to start backend recovery process...</div>
+      <div class="log-entry info">This runs server-side with full admin privileges.</div>
+    </div>
+
+    <div id="summary" class="summary" style="display: none;">
+      <h3>✅ Recovery Complete!</h3>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="totalTasks">0</div>
+          <div class="stat-label">Total Tasks</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="aiTasks">0</div>
+          <div class="stat-label">AI Tasks</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="dailyTasks">0</div>
+          <div class="stat-label">Daily Tasks</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="projectsDeleted">0</div>
+          <div class="stat-label">Projects Removed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let logEntries = [];
+
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = `[${timestamp}] ${message}`;
+      logEntries.push({ message: logEntry, type });
+      updateStatusBox();
+    }
+
+    function updateStatusBox() {
+      const statusBox = document.getElementById('status');
+      statusBox.innerHTML = logEntries.map(entry => 
+        `<div class="log-entry ${entry.type}">${entry.message}</div>`
+      ).join('');
+      statusBox.scrollTop = statusBox.scrollHeight;
+    }
+
+    function clearLog() {
+      logEntries = [];
+      log('Log cleared. Ready to start recovery...', 'info');
+      document.getElementById('summary').style.display = 'none';
+    }
+
+    async function startRecovery() {
+      const btn = document.getElementById('startBtn');
+      const loader = document.getElementById('loader');
+      
+      btn.disabled = true;
+      btn.textContent = 'Recovery in progress...';
+      loader.style.display = 'block';
+      
+      document.getElementById('summary').style.display = 'none';
+      
+      try {
+        log('🚀 Starting Backend Recovery Process', 'header');
+        log('Connecting to Netlify Functions backend...', 'info');
+        
+        const response = await fetch('/.netlify/functions/recover-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: 'chris@chris.com'
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          log('✅ Backend recovery initiated successfully', 'success');
+          
+          // Display all steps from the backend
+          if (data.results && data.results.steps) {
+            data.results.steps.forEach(step => {
+              const type = step.includes('✅') ? 'success' : 
+                           step.includes('❌') ? 'error' : 
+                           step.includes('🗑️') ? 'warning' : 
+                           step.includes('Step') ? 'header' : 'info';
+              log(step, type);
+            });
+          }
+
+          // Update summary
+          if (data.results && data.results.summary) {
+            const summary = data.results.summary;
+            document.getElementById('totalTasks').textContent = summary.tasksUpdated || 0;
+            document.getElementById('aiTasks').textContent = summary.aiTasksCount || 0;
+            document.getElementById('dailyTasks').textContent = summary.dailyTasksCount || 0;
+            document.getElementById('projectsDeleted').textContent = summary.projectsDeleted || 0;
+            document.getElementById('summary').style.display = 'block';
+          }
+
+          log('🎉 Recovery completed successfully!', 'header');
+          log('All tasks have been reassigned and categorized.', 'success');
+          log('Refresh the main application to see the changes.', 'info');
+          
+        } else {
+          log(`❌ Recovery failed: ${data.error || 'Unknown error'}`, 'error');
+          if (data.stack) {
+            console.error('Full error stack:', data.stack);
+          }
+        }
+
+      } catch (error) {
+        log(`❌ Network error: ${error.message}`, 'error');
+        log('Check browser console for details', 'warning');
+        console.error('Full error:', error);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🚀 Start Recovery';
+        loader.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

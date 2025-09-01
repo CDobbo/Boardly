@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Chris Complete Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .container { background: #f5f5f5; padding: 20px; border-radius: 8px; }
+        .button { background: #28a745; color: white; border: none; padding: 15px 30px; border-radius: 4px; cursor: pointer; margin: 10px 0; font-size: 16px; }
+        .button:hover { background: #218838; }
+        .button:disabled { background: #ccc; cursor: not-allowed; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 4px; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .loading { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .warning { background: #ffeaa7; border: 2px solid #ff9800; padding: 15px; margin: 15px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Setup Complete Data for chris@chris.com</h1>
+        
+        <div class="warning">
+            <h3>⚠️ Warning: This will:</h3>
+            <ul>
+                <li>DELETE all existing projects, tasks, and goals for chris@chris.com</li>
+                <li>CREATE 6 new projects with proper structure</li>
+                <li>CREATE 20 tasks with the specific titles you requested</li>
+                <li>CREATE 4 goals for tracking</li>
+                <li>Set proper userId fields so everything shows in the app</li>
+            </ul>
+            <p><strong>This action cannot be undone!</strong></p>
+        </div>
+        
+        <div id="authSection">
+            <h3>🔐 Sign in to setup data</h3>
+            <button class="button" onclick="signInAsChris()">Sign in as chris@chris.com</button>
+            <div id="userInfo" style="display: none;">
+                <p>Signed in as: <span id="userEmail"></span></p>
+                <button class="button" onclick="setupComplete()" id="setupBtn">🚀 Setup Complete Data for chris@chris.com</button>
+                <button class="button" onclick="signOut()" style="background: #dc3545;">Sign Out</button>
+            </div>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDe2MxZlVfHT0p9qvUT2cnq5-CUUOLlMJU",
+            authDomain: "boardly-95104.firebaseapp.com",
+            projectId: "boardly-95104",
+            storageBucket: "boardly-95104.firebasestorage.app",
+            messagingSenderId: "278347808379",
+            appId: "1:278347808379:web:649a8774a9f88f010cecde"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('userInfo').style.display = 'block';
+                document.querySelector('#authSection button').style.display = 'none';
+            } else {
+                document.getElementById('userInfo').style.display = 'none';
+                document.querySelector('#authSection button').style.display = 'block';
+            }
+        });
+
+        window.signInAsChris = async () => {
+            try {
+                await signInWithEmailAndPassword(auth, 'chris@chris.com', 'Test123');
+                showResult('✅ Signed in as chris@chris.com successfully!', 'success');
+            } catch (error) {
+                showResult(`❌ Sign in failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.signOut = async () => {
+            try {
+                await signOut(auth);
+                document.getElementById('result').innerHTML = '';
+                showResult('👋 Signed out successfully', 'success');
+            } catch (error) {
+                showResult(`❌ Sign out failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.setupComplete = async () => {
+            if (!currentUser) {
+                showResult('❌ Please sign in first', 'error');
+                return;
+            }
+
+            if (!confirm('⚠️ This will DELETE all existing data and create new projects, tasks, and goals for chris@chris.com. Are you sure?')) {
+                return;
+            }
+
+            try {
+                const btn = document.getElementById('setupBtn');
+                btn.disabled = true;
+                btn.textContent = '🔄 Setting up data...';
+                
+                showResult('🔄 Creating complete data setup for chris@chris.com...', 'loading');
+
+                const token = await currentUser.getIdToken();
+                
+                const response = await fetch('/.netlify/functions/setup-chris-complete', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    let output = `✅ SETUP COMPLETED SUCCESSFULLY!\n\n`;
+                    output += `🎯 User: chris@chris.com (UID: ${data.chrisUid})\n\n`;
+                    
+                    output += `📊 Created:\n`;
+                    output += `• ${data.created.projects} Projects\n`;
+                    output += `• ${data.created.tasks} Tasks\n`;
+                    output += `• ${data.created.goals} Goals\n\n`;
+                    
+                    output += `📁 PROJECTS CREATED:\n`;
+                    data.projectDetails.forEach((project, i) => {
+                        output += `  ${i+1}. ${project.name}\n`;
+                        output += `     ID: ${project.id}\n`;
+                    });
+                    output += `\n`;
+                    
+                    output += `🎉 SUCCESS!\n\n`;
+                    output += `chris@chris.com now has:\n`;
+                    output += `• 6 organized projects\n`;
+                    output += `• 20 tasks with your specific titles\n`;
+                    output += `• 4 strategic goals\n`;
+                    output += `• Proper userId fields for all data\n\n`;
+                    
+                    output += `✅ You can now log into the main app as chris@chris.com and see:\n`;
+                    output += `• All projects in the Projects view\n`;
+                    output += `• All tasks in My Tasks view\n`;
+                    output += `• Kanban boards for each project\n`;
+                    output += `• Goals in the Goals section\n`;
+
+                    showResult(output, 'success');
+                } else {
+                    showResult(`❌ Setup failed: ${data.error}`, 'error');
+                }
+                
+            } catch (error) {
+                showResult(`❌ Network error: ${error.message}`, 'error');
+            } finally {
+                const btn = document.getElementById('setupBtn');
+                btn.disabled = false;
+                btn.textContent = '🚀 Setup Complete Data for chris@chris.com';
+            }
+        };
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+    </script>
+</body>
+</html>

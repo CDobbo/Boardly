@@ -1,0 +1,232 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Calendar and Events', () => {
+  let testEmail: string;
+  
+  test.beforeEach(async ({ page }) => {
+    // Create a unique user for each test
+    const timestamp = Date.now();
+    testEmail = `test${timestamp}@example.com`;
+    
+    // Register and login
+    await page.goto('/register');
+    await page.fill('input[placeholder="John Doe"]', 'Test User');
+    await page.fill('input[type="email"]', testEmail);
+    await page.fill('input[type="password"]', 'TestPassword123!');
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/$/);
+    
+    // Navigate to Calendar
+    await page.click('text=Calendar');
+    await page.waitForURL(/\/calendar/);
+  });
+
+  test('should display calendar view', async ({ page }) => {
+    // Verify calendar elements are visible
+    await expect(page.locator('.rbc-calendar, .calendar-container')).toBeVisible();
+    
+    // Check for month/week/day view buttons
+    const viewButtons = page.locator('button:has-text("Month"), button:has-text("Week"), button:has-text("Day")');
+    await expect(viewButtons.first()).toBeVisible();
+    
+    // Check for navigation buttons
+    await expect(page.locator('button:has-text("Today")')).toBeVisible();
+    await expect(page.locator('button[aria-label="Previous"], button:has-text("Previous")')).toBeVisible();
+    await expect(page.locator('button[aria-label="Next"], button:has-text("Next")')).toBeVisible();
+  });
+
+  test('should create a new event', async ({ page }) => {
+    // Click on a calendar date or "New Event" button
+    const newEventButton = page.locator('button:has-text("New Event"), button:has-text("Add Event")');
+    
+    if (await newEventButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await newEventButton.click();
+    } else {
+      // Click on today's date in the calendar
+      const today = new Date().getDate().toString();
+      await page.locator(`.rbc-date-cell:has-text("${today}")`).first().click();
+    }
+    
+    // Fill event details
+    await page.fill('input[placeholder*="title"], input[placeholder*="Title"]', 'Test Meeting');
+    await page.fill('textarea[placeholder*="description"], textarea[placeholder*="Description"]', 'Important team meeting');
+    
+    // Set time
+    const startTime = page.locator('input[type="time"]').first();
+    if (await startTime.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await startTime.fill('14:00');
+      const endTime = page.locator('input[type="time"]').nth(1);
+      await endTime.fill('15:00');
+    }
+    
+    // Save event
+    await page.click('button:has-text("Save"), button:has-text("Create")');
+    
+    // Verify event appears on calendar
+    await expect(page.locator('text=Test Meeting')).toBeVisible();
+  });
+
+  test('should edit an existing event', async ({ page }) => {
+    // Create an event first
+    const newEventButton = page.locator('button:has-text("New Event"), button:has-text("Add Event")');
+    
+    if (await newEventButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await newEventButton.click();
+    } else {
+      const today = new Date().getDate().toString();
+      await page.locator(`.rbc-date-cell:has-text("${today}")`).first().click();
+    }
+    
+    await page.fill('input[placeholder*="title"], input[placeholder*="Title"]', 'Original Event');
+    await page.fill('textarea[placeholder*="description"], textarea[placeholder*="Description"]', 'Original description');
+    await page.click('button:has-text("Save"), button:has-text("Create")');
+    
+    // Click on the event to edit
+    await page.click('text=Original Event');
+    
+    // Edit event details
+    await page.fill('input[value="Original Event"]', 'Updated Event');
+    await page.fill('textarea', 'Updated description');
+    await page.click('button:has-text("Save"), button:has-text("Update")');
+    
+    // Verify changes
+    await expect(page.locator('text=Updated Event')).toBeVisible();
+  });
+
+  test('should delete an event', async ({ page }) => {
+    // Create an event
+    const newEventButton = page.locator('button:has-text("New Event"), button:has-text("Add Event")');
+    
+    if (await newEventButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await newEventButton.click();
+    } else {
+      const today = new Date().getDate().toString();
+      await page.locator(`.rbc-date-cell:has-text("${today}")`).first().click();
+    }
+    
+    await page.fill('input[placeholder*="title"], input[placeholder*="Title"]', 'Event to Delete');
+    await page.fill('textarea[placeholder*="description"], textarea[placeholder*="Description"]', 'This will be deleted');
+    await page.click('button:has-text("Save"), button:has-text("Create")');
+    
+    // Click on the event
+    await page.click('text=Event to Delete');
+    
+    // Delete the event
+    await page.click('button:has-text("Delete")');
+    
+    // Confirm deletion if needed
+    const confirmButton = page.locator('button:has-text("Confirm")').last();
+    if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await confirmButton.click();
+    }
+    
+    // Verify event is deleted
+    await expect(page.locator('text=Event to Delete')).not.toBeVisible();
+  });
+
+  test('should switch between calendar views', async ({ page }) => {
+    // Test Month view
+    const monthButton = page.locator('button:has-text("Month")');
+    if (await monthButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await monthButton.click();
+      await expect(page.locator('.rbc-month-view')).toBeVisible();
+    }
+    
+    // Test Week view
+    const weekButton = page.locator('button:has-text("Week")');
+    if (await weekButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await weekButton.click();
+      await expect(page.locator('.rbc-week-view, .rbc-time-view')).toBeVisible();
+    }
+    
+    // Test Day view
+    const dayButton = page.locator('button:has-text("Day")');
+    if (await dayButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await dayButton.click();
+      await expect(page.locator('.rbc-day-view, .rbc-time-view')).toBeVisible();
+    }
+  });
+
+  test('should navigate through calendar dates', async ({ page }) => {
+    // Get current month/year
+    const currentMonthYear = await page.locator('.rbc-toolbar-label').textContent();
+    
+    // Navigate to next month
+    await page.click('button[aria-label="Next"], button:has-text("Next")');
+    
+    // Verify month changed
+    const nextMonthYear = await page.locator('.rbc-toolbar-label').textContent();
+    expect(nextMonthYear).not.toBe(currentMonthYear);
+    
+    // Navigate back to today
+    await page.click('button:has-text("Today")');
+    
+    // Verify we're back to current month
+    const todayMonthYear = await page.locator('.rbc-toolbar-label').textContent();
+    expect(todayMonthYear).toContain(new Date().toLocaleString('default', { month: 'long' }));
+  });
+
+  test('should display events with different colors by type', async ({ page }) => {
+    // Create events of different types if type selection exists
+    const eventTypes = ['meeting', 'deadline', 'reminder'];
+    
+    for (const type of eventTypes) {
+      const newEventButton = page.locator('button:has-text("New Event"), button:has-text("Add Event")');
+      
+      if (await newEventButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await newEventButton.click();
+      } else {
+        const today = new Date().getDate().toString();
+        await page.locator(`.rbc-date-cell:has-text("${today}")`).first().click();
+      }
+      
+      await page.fill('input[placeholder*="title"], input[placeholder*="Title"]', `${type} Event`);
+      await page.fill('textarea[placeholder*="description"], textarea[placeholder*="Description"]', `Event of type ${type}`);
+      
+      // Select event type if available
+      const typeSelect = page.locator('select:has-text("Type"), select[name="type"]');
+      if (await typeSelect.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await typeSelect.selectOption(type);
+      }
+      
+      await page.click('button:has-text("Save"), button:has-text("Create")');
+    }
+    
+    // Verify all events are visible
+    for (const type of eventTypes) {
+      await expect(page.locator(`text=${type} Event`)).toBeVisible();
+    }
+  });
+
+  test('should handle recurring events', async ({ page }) => {
+    // Create a recurring event if supported
+    const newEventButton = page.locator('button:has-text("New Event"), button:has-text("Add Event")');
+    
+    if (await newEventButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await newEventButton.click();
+    } else {
+      const today = new Date().getDate().toString();
+      await page.locator(`.rbc-date-cell:has-text("${today}")`).first().click();
+    }
+    
+    await page.fill('input[placeholder*="title"], input[placeholder*="Title"]', 'Weekly Standup');
+    await page.fill('textarea[placeholder*="description"], textarea[placeholder*="Description"]', 'Team standup meeting');
+    
+    // Check for recurrence options
+    const recurringCheckbox = page.locator('input[type="checkbox"]:has-text("Recurring"), label:has-text("Recurring")');
+    if (await recurringCheckbox.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await recurringCheckbox.check();
+      
+      // Select weekly recurrence
+      const frequencySelect = page.locator('select:has-text("Frequency")');
+      if (await frequencySelect.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await frequencySelect.selectOption('weekly');
+      }
+    }
+    
+    await page.click('button:has-text("Save"), button:has-text("Create")');
+    
+    // Verify event appears
+    await expect(page.locator('text=Weekly Standup')).toBeVisible();
+  });
+});

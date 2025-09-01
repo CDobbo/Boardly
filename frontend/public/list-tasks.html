@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List All Tasks</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .container { background: #f5f5f5; padding: 20px; border-radius: 8px; }
+        .button { background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 10px 0; }
+        .button:hover { background: #005a85; }
+        .button:disabled { background: #ccc; cursor: not-allowed; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 4px; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .loading { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .user-section { margin: 20px 0; padding: 15px; border: 2px solid #007cba; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 List All Tasks in Database</h1>
+        <p>This will show all tasks and projects that don't belong to demo@taskmanager.com</p>
+        
+        <div id="authSection">
+            <h3>🔐 Sign in to check all tasks</h3>
+            <button class="button" onclick="signInAsDemo()">Sign in as demo user</button>
+            <div id="userInfo" style="display: none;">
+                <p>Signed in as: <span id="userEmail"></span></p>
+                <button class="button" onclick="listAllTasks()" id="listBtn">📋 List All Tasks</button>
+                <button class="button" onclick="signOut()" style="background: #dc3545;">Sign Out</button>
+            </div>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDe2MxZlVfHT0p9qvUT2cnq5-CUUOLlMJU",
+            authDomain: "boardly-95104.firebaseapp.com",
+            projectId: "boardly-95104",
+            storageBucket: "boardly-95104.firebasestorage.app",
+            messagingSenderId: "278347808379",
+            appId: "1:278347808379:web:649a8774a9f88f010cecde"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('userInfo').style.display = 'block';
+                document.querySelector('#authSection button').style.display = 'none';
+            } else {
+                document.getElementById('userInfo').style.display = 'none';
+                document.querySelector('#authSection button').style.display = 'block';
+            }
+        });
+
+        window.signInAsDemo = async () => {
+            try {
+                await signInWithEmailAndPassword(auth, 'demo@taskmanager.com', 'Test123');
+                showResult('✅ Signed in successfully!', 'success');
+            } catch (error) {
+                showResult(`❌ Sign in failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.signOut = async () => {
+            try {
+                await signOut(auth);
+                document.getElementById('result').innerHTML = '';
+                showResult('👋 Signed out successfully', 'success');
+            } catch (error) {
+                showResult(`❌ Sign out failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.listAllTasks = async () => {
+            if (!currentUser) {
+                showResult('❌ Please sign in first', 'error');
+                return;
+            }
+
+            try {
+                const btn = document.getElementById('listBtn');
+                btn.disabled = true;
+                btn.textContent = '🔄 Loading...';
+                
+                showResult('🔄 Loading all tasks and projects...', 'loading');
+
+                const token = await currentUser.getIdToken();
+                
+                const response = await fetch('/.netlify/functions/list-all-tasks', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    let output = `📊 Database Overview:\n`;
+                    output += `Total Tasks: ${data.summary.totalTasks}\n`;
+                    output += `Total Projects: ${data.summary.totalProjects}\n`;
+                    output += `Demo User UID: ${data.summary.demoUserUid}\n`;
+                    output += `Current User UID: ${data.summary.currentUserUid}\n`;
+                    output += `Users with Tasks: ${data.summary.usersWithTasks}\n`;
+                    output += `Users with Projects: ${data.summary.usersWithProjects}\n`;
+                    output += `Orphan Tasks (no userId): ${data.summary.orphanTasks}\n`;
+                    output += `Orphan Projects (no userId): ${data.summary.orphanProjects}\n\n`;
+
+                    output += `👥 All Users:\n`;
+                    for (const [uid, email] of Object.entries(data.userEmails)) {
+                        output += `  ${email} (UID: ${uid})\n`;
+                    }
+                    output += `\n`;
+
+                    output += `📋 TASKS BY USER (excluding demo user):\n\n`;
+                    for (const [uid, userInfo] of Object.entries(data.tasksByUser)) {
+                        output += `👤 ${userInfo.email} (UID: ${uid}) - ${userInfo.tasks.length} tasks:\n`;
+                        userInfo.tasks.forEach((task, i) => {
+                            output += `  ${i+1}. "${task.title}" (ID: ${task.id})\n`;
+                            if (task.description) output += `     Description: ${task.description.substring(0, 80)}...\n`;
+                            output += `     Status: ${task.status || 'unknown'}\n`;
+                            output += `     Priority: ${task.priority || 'unknown'}\n`;
+                            if (task.projectId) output += `     Project ID: ${task.projectId}\n`;
+                            if (task.createdAt) output += `     Created: ${task.createdAt}\n`;
+                            output += `\n`;
+                        });
+                        output += `\n`;
+                    }
+
+                    output += `📁 PROJECTS BY USER (excluding demo user):\n\n`;
+                    for (const [uid, userInfo] of Object.entries(data.projectsByUser)) {
+                        output += `👤 ${userInfo.email} (UID: ${uid}) - ${userInfo.projects.length} projects:\n`;
+                        userInfo.projects.forEach((project, i) => {
+                            output += `  ${i+1}. "${project.name}" (ID: ${project.id})\n`;
+                            if (project.description) output += `     Description: ${project.description.substring(0, 80)}...\n`;
+                            output += `     Status: ${project.status || 'unknown'}\n`;
+                            if (project.createdAt) output += `     Created: ${project.createdAt}\n`;
+                            output += `\n`;
+                        });
+                        output += `\n`;
+                    }
+
+                    if (data.orphanTasks.length > 0) {
+                        output += `🚫 ORPHAN TASKS (no userId field):\n`;
+                        data.orphanTasks.forEach((task, i) => {
+                            output += `  ${i+1}. "${task.title}" (ID: ${task.id})\n`;
+                        });
+                        output += `\n`;
+                    }
+
+                    if (data.orphanProjects.length > 0) {
+                        output += `🚫 ORPHAN PROJECTS (no userId field):\n`;
+                        data.orphanProjects.forEach((project, i) => {
+                            output += `  ${i+1}. "${project.name}" (ID: ${project.id})\n`;
+                        });
+                        output += `\n`;
+                    }
+
+                    showResult(output, 'success');
+                } else {
+                    showResult(`❌ Error: ${data.error}`, 'error');
+                }
+                
+            } catch (error) {
+                showResult(`❌ Network error: ${error.message}`, 'error');
+            } finally {
+                const btn = document.getElementById('listBtn');
+                btn.disabled = false;
+                btn.textContent = '📋 List All Tasks';
+            }
+        };
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+    </script>
+</body>
+</html>

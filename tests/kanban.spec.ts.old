@@ -1,0 +1,249 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Kanban Board', () => {
+  let testEmail: string;
+  
+  test.beforeEach(async ({ page }) => {
+    // Create a unique user for each test
+    const timestamp = Date.now();
+    testEmail = `test${timestamp}@example.com`;
+    
+    // Register and login
+    await page.goto('/register');
+    await page.fill('input[placeholder="John Doe"]', 'Test User');
+    await page.fill('input[type="email"]', testEmail);
+    await page.fill('input[type="password"]', 'TestPassword123!');
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/$/);
+    
+    // Navigate to Projects
+    await page.click('text=Projects');
+    await page.waitForURL(/\/projects/);
+  });
+
+  test('should display kanban board columns', async ({ page }) => {
+    // Create a project first
+    await page.click('button:has-text("New Project")');
+    await page.fill('input[placeholder="Project name"]', 'Test Project');
+    await page.fill('textarea[placeholder="Project description"]', 'Test project for Kanban board');
+    await page.click('button:has-text("Create")');
+    
+    // Navigate to the project board
+    await page.click('text=Test Project');
+    
+    // Verify kanban columns are visible
+    await expect(page.locator('text=To Do')).toBeVisible();
+    await expect(page.locator('text=In Progress')).toBeVisible();
+    await expect(page.locator('text=Done')).toBeVisible();
+  });
+
+  test('should create a task in kanban board', async ({ page }) => {
+    // Create project
+    await page.click('button:has-text("New Project")');
+    await page.fill('input[placeholder="Project name"]', 'Kanban Test Project');
+    await page.fill('textarea[placeholder="Project description"]', 'Testing kanban functionality');
+    await page.click('button:has-text("Create")');
+    
+    // Navigate to project board
+    await page.click('text=Kanban Test Project');
+    
+    // Add task to To Do column
+    const todoColumn = page.locator('div:has-text("To Do")').first();
+    const addButton = todoColumn.locator('button:has-text("+"), button:has-text("Add")');
+    await addButton.click();
+    
+    // Fill task details
+    await page.fill('input[placeholder="Task title"]', 'Kanban Task 1');
+    await page.fill('textarea[placeholder="Task description"]', 'First task in kanban board');
+    await page.click('button:has-text("Add"), button:has-text("Create")');
+    
+    // Verify task appears in To Do column
+    await expect(page.locator('text=Kanban Task 1')).toBeVisible();
+  });
+
+  test('should drag and drop task between columns', async ({ page }) => {
+    // Create project
+    await page.click('button:has-text("New Project")');
+    await page.fill('input[placeholder="Project name"]', 'Drag Drop Project');
+    await page.fill('textarea[placeholder="Project description"]', 'Testing drag and drop');
+    await page.click('button:has-text("Create")');
+    
+    // Navigate to project board
+    await page.click('text=Drag Drop Project');
+    
+    // Add a task
+    const todoColumn = page.locator('div:has-text("To Do")').first();
+    const addButton = todoColumn.locator('button:has-text("+"), button:has-text("Add")');
+    await addButton.click();
+    
+    await page.fill('input[placeholder="Task title"]', 'Draggable Task');
+    await page.fill('textarea[placeholder="Task description"]', 'This task will be moved');
+    await page.click('button:has-text("Add"), button:has-text("Create")');
+    
+    // Wait for task to appear
+    const taskCard = page.locator('text=Draggable Task');
+    await taskCard.waitFor();
+    
+    // Perform drag and drop
+    const inProgressColumn = page.locator('div:has-text("In Progress")').first();
+    
+    // Get bounding boxes
+    const taskBox = await taskCard.boundingBox();
+    const targetBox = await inProgressColumn.boundingBox();
+    
+    if (taskBox && targetBox) {
+      // Start drag from center of task
+      await page.mouse.move(taskBox.x + taskBox.width / 2, taskBox.y + taskBox.height / 2);
+      await page.mouse.down();
+      
+      // Move to center of target column
+      await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + 100, { steps: 5 });
+      await page.mouse.up();
+      
+      // Verify task moved to In Progress
+      const inProgressTasks = inProgressColumn.locator('text=Draggable Task');
+      await expect(inProgressTasks).toBeVisible();
+    }
+  });
+
+  test('should edit task from kanban board', async ({ page }) => {
+    // Create project with task
+    await page.click('button:has-text("New Project")');
+    await page.fill('input[placeholder="Project name"]', 'Edit Task Project');
+    await page.fill('textarea[placeholder="Project description"]', 'Testing task editing');
+    await page.click('button:has-text("Create")');
+    
+    await page.click('text=Edit Task Project');
+    
+    // Add task
+    const todoColumn = page.locator('div:has-text("To Do")').first();
+    const addButton = todoColumn.locator('button:has-text("+"), button:has-text("Add")');
+    await addButton.click();
+    
+    await page.fill('input[placeholder="Task title"]', 'Original Title');
+    await page.fill('textarea[placeholder="Task description"]', 'Original description');
+    await page.click('button:has-text("Add"), button:has-text("Create")');
+    
+    // Edit the task
+    const taskCard = page.locator('text=Original Title').locator('..');
+    await taskCard.hover();
+    await taskCard.locator('button[aria-label="Edit"]').click();
+    
+    // Update task details
+    await page.fill('input[value="Original Title"]', 'Updated Title');
+    await page.fill('textarea', 'Updated description');
+    await page.click('button:has-text("Save")');
+    
+    // Verify changes
+    await expect(page.locator('text=Updated Title')).toBeVisible();
+  });
+
+  test('should delete task from kanban board', async ({ page }) => {
+    // Create project with task
+    await page.click('button:has-text("New Project")');
+    await page.fill('input[placeholder="Project name"]', 'Delete Task Project');
+    await page.fill('textarea[placeholder="Project description"]', 'Testing task deletion');
+    await page.click('button:has-text("Create")');
+    
+    await page.click('text=Delete Task Project');
+    
+    // Add task
+    const todoColumn = page.locator('div:has-text("To Do")').first();
+    const addButton = todoColumn.locator('button:has-text("+"), button:has-text("Add")');
+    await addButton.click();
+    
+    await page.fill('input[placeholder="Task title"]', 'Task to Delete');
+    await page.fill('textarea[placeholder="Task description"]', 'This will be deleted');
+    await page.click('button:has-text("Add"), button:has-text("Create")');
+    
+    // Delete the task
+    const taskCard = page.locator('text=Task to Delete').locator('..');
+    await taskCard.hover();
+    await taskCard.locator('button[aria-label="Delete"]').click();
+    
+    // Confirm deletion if needed
+    const confirmButton = page.locator('button:has-text("Confirm"), button:has-text("Delete")').last();
+    if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await confirmButton.click();
+    }
+    
+    // Verify task is deleted
+    await expect(page.locator('text=Task to Delete')).not.toBeVisible();
+  });
+
+  test('should filter tasks by assignee', async ({ page }) => {
+    // Create project
+    await page.click('button:has-text("New Project")');
+    await page.fill('input[placeholder="Project name"]', 'Filter Test Project');
+    await page.fill('textarea[placeholder="Project description"]', 'Testing filtering');
+    await page.click('button:has-text("Create")');
+    
+    await page.click('text=Filter Test Project');
+    
+    // Add multiple tasks
+    for (let i = 1; i <= 3; i++) {
+      const todoColumn = page.locator('div:has-text("To Do")').first();
+      const addButton = todoColumn.locator('button:has-text("+"), button:has-text("Add")');
+      await addButton.click();
+      
+      await page.fill('input[placeholder="Task title"]', `Task ${i}`);
+      await page.fill('textarea[placeholder="Task description"]', `Description ${i}`);
+      
+      // Assign to user if assignee field exists
+      const assigneeField = page.locator('select:has-text("Assignee"), input[placeholder*="Assign"]');
+      if (await assigneeField.isVisible({ timeout: 1000 }).catch(() => false)) {
+        if (i === 1 || i === 2) {
+          await assigneeField.selectOption('Test User');
+        }
+      }
+      
+      await page.click('button:has-text("Add"), button:has-text("Create")');
+    }
+    
+    // Test filter if available
+    const filterDropdown = page.locator('select:has-text("Filter"), button:has-text("Filter")');
+    if (await filterDropdown.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await filterDropdown.click();
+      await page.click('text=My Tasks');
+      
+      // Should only see tasks assigned to current user
+      await expect(page.locator('text=Task 1')).toBeVisible();
+      await expect(page.locator('text=Task 2')).toBeVisible();
+      await expect(page.locator('text=Task 3')).not.toBeVisible();
+    }
+  });
+
+  test('should show task count in columns', async ({ page }) => {
+    // Create project
+    await page.click('button:has-text("New Project")');
+    await page.fill('input[placeholder="Project name"]', 'Count Test Project');
+    await page.fill('textarea[placeholder="Project description"]', 'Testing task counts');
+    await page.click('button:has-text("Create")');
+    
+    await page.click('text=Count Test Project');
+    
+    // Add tasks to different columns
+    const columns = ['To Do', 'To Do', 'In Progress'];
+    
+    for (let i = 0; i < columns.length; i++) {
+      const column = page.locator(`div:has-text("${columns[i]}")`).first();
+      const addButton = column.locator('button:has-text("+"), button:has-text("Add")');
+      await addButton.click();
+      
+      await page.fill('input[placeholder="Task title"]', `Task ${i + 1}`);
+      await page.fill('textarea[placeholder="Task description"]', `Description ${i + 1}`);
+      await page.click('button:has-text("Add"), button:has-text("Create")');
+    }
+    
+    // Check if task counts are displayed
+    const todoCount = page.locator('div:has-text("To Do")').first().locator('text=/(2)|(2 tasks)/');
+    const inProgressCount = page.locator('div:has-text("In Progress")').first().locator('text=/(1)|(1 task)/');
+    
+    if (await todoCount.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expect(todoCount).toBeVisible();
+    }
+    if (await inProgressCount.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expect(inProgressCount).toBeVisible();
+    }
+  });
+});

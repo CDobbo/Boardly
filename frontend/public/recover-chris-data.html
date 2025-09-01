@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Data Recovery - chris@chris.com</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 800px;
+      width: 100%;
+      padding: 40px;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    .status-box {
+      background: #f5f5f5;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+    .success { color: #10b981; }
+    .error { color: #ef4444; }
+    .info { color: #3b82f6; }
+    .warning { color: #f59e0b; }
+    .header { font-weight: bold; color: #6366f1; margin-top: 15px; }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-right: 10px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .summary {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f0fdf4;
+      border: 2px solid #10b981;
+      border-radius: 8px;
+    }
+    .summary h3 {
+      color: #059669;
+      margin-bottom: 10px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .stat {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      border: 1px solid #d1fae5;
+    }
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #059669;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <span>🚨</span>
+      Emergency Data Recovery
+    </h1>
+    <div class="subtitle">Recovering all data for chris@chris.com</div>
+    
+    <div class="button-group">
+      <button id="startBtn" onclick="startRecovery()">Start Recovery</button>
+      <button id="testBtn" onclick="testConnection()" style="background: #6b7280;">Test Connection</button>
+      <button id="clearBtn" onclick="clearLog()" style="background: #ef4444;">Clear Log</button>
+    </div>
+
+    <div id="status" class="status-box">
+      <div class="log-entry info">Ready to start recovery process...</div>
+    </div>
+
+    <div id="summary" class="summary" style="display: none;">
+      <h3>✅ Recovery Complete!</h3>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="totalTasks">0</div>
+          <div class="stat-label">Total Tasks</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="aiTasks">0</div>
+          <div class="stat-label">AI Tasks</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="dailyTasks">0</div>
+          <div class="stat-label">Daily Tasks</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="projectsDeleted">0</div>
+          <div class="stat-label">Projects Removed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyD_l6R1M5qn0desmVlc2-WQB5YcOcvVzKg",
+      authDomain: "boardly-95104.firebaseapp.com",
+      projectId: "boardly-95104",
+      storageBucket: "boardly-95104.appspot.com",
+      messagingSenderId: "55025563584",
+      appId: "1:55025563584:web:c8e14cec187f006b87bd48"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let logEntries = [];
+
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = `[${timestamp}] ${message}`;
+      logEntries.push({ message: logEntry, type });
+      updateStatusBox();
+    }
+
+    function updateStatusBox() {
+      const statusBox = document.getElementById('status');
+      statusBox.innerHTML = logEntries.map(entry => 
+        `<div class="log-entry ${entry.type}">${entry.message}</div>`
+      ).join('');
+      statusBox.scrollTop = statusBox.scrollHeight;
+    }
+
+    function clearLog() {
+      logEntries = [];
+      log('Log cleared. Ready to start recovery...', 'info');
+      document.getElementById('summary').style.display = 'none';
+    }
+
+    async function testConnection() {
+      try {
+        log('Testing Firebase connection...', 'info');
+        const test = await db.collection('projects').limit(1).get();
+        log(`✅ Connection successful! Found ${test.size} project(s)`, 'success');
+      } catch (error) {
+        log(`❌ Connection failed: ${error.message}`, 'error');
+      }
+    }
+
+    async function startRecovery() {
+      const btn = document.getElementById('startBtn');
+      btn.disabled = true;
+      btn.textContent = 'Recovery in progress...';
+      
+      document.getElementById('summary').style.display = 'none';
+      
+      try {
+        log('🚀 Starting Emergency Data Recovery', 'header');
+        
+        // Step 1: Sign in as admin (you might need to sign in first)
+        log('Step 1: Authenticating...', 'info');
+        
+        let currentUser = auth.currentUser;
+        if (!currentUser) {
+          // Try to sign in with chris@chris.com
+          try {
+            await auth.signInWithEmailAndPassword('chris@chris.com', 'Ronaldo7');
+            currentUser = auth.currentUser;
+            log('✅ Authenticated as chris@chris.com', 'success');
+          } catch (authError) {
+            log('⚠️ Could not auto-authenticate. Please sign in manually first.', 'warning');
+            // You might want to handle manual sign-in here
+          }
+        }
+
+        // Step 2: Get Chris's user ID
+        log('Step 2: Finding chris@chris.com user...', 'info');
+        const chrisEmail = 'chris@chris.com';
+        let chrisUserId = currentUser ? currentUser.uid : null;
+        
+        if (!chrisUserId) {
+          // Try to find by email in existing data
+          const users = await db.collection('users').where('email', '==', chrisEmail).get();
+          if (!users.empty) {
+            chrisUserId = users.docs[0].id;
+          }
+        }
+        
+        if (!chrisUserId) {
+          throw new Error('Could not find user ID for chris@chris.com');
+        }
+        
+        log(`✅ Found user ID: ${chrisUserId}`, 'success');
+
+        // Step 3: Create required projects
+        log('Step 3: Creating required projects...', 'header');
+        
+        const projectsToCreate = [
+          {
+            name: 'Daily Tasks',
+            description: 'Everyday tasks and personal activities',
+            color: '#3B82F6'
+          },
+          {
+            name: 'AI Tasks',
+            description: 'AI development and programming tasks',
+            color: '#8B5CF6'
+          }
+        ];
+
+        let dailyTasksId = null;
+        let aiTasksId = null;
+
+        // Check existing projects
+        const existingProjects = await db.collection('projects')
+          .where('userId', '==', chrisUserId)
+          .get();
+
+        existingProjects.forEach(doc => {
+          const data = doc.data();
+          if (data.name === 'Daily Tasks') {
+            dailyTasksId = doc.id;
+            log(`📌 Found existing Daily Tasks project: ${doc.id}`, 'info');
+          } else if (data.name === 'AI Tasks') {
+            aiTasksId = doc.id;
+            log(`📌 Found existing AI Tasks project: ${doc.id}`, 'info');
+          }
+        });
+
+        // Create missing projects
+        for (const projectData of projectsToCreate) {
+          if ((projectData.name === 'Daily Tasks' && !dailyTasksId) ||
+              (projectData.name === 'AI Tasks' && !aiTasksId)) {
+            
+            const newProject = {
+              ...projectData,
+              userId: chrisUserId,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              members: [chrisUserId],
+              owner: chrisEmail,
+              owner_email: chrisEmail,
+              owner_name: 'Chris',
+              role: 'owner'
+            };
+
+            const ref = await db.collection('projects').add(newProject);
+            
+            if (projectData.name === 'Daily Tasks') {
+              dailyTasksId = ref.id;
+            } else {
+              aiTasksId = ref.id;
+            }
+            
+            log(`✅ Created ${projectData.name} project: ${ref.id}`, 'success');
+
+            // Create board for the project
+            const board = {
+              projectId: ref.id,
+              userId: chrisUserId,
+              columns: [
+                { id: '1', name: 'To Do', order: 0, color: '#94a3b8' },
+                { id: '2', name: 'In Progress', order: 1, color: '#3b82f6' },
+                { id: '3', name: 'Review', order: 2, color: '#f59e0b' },
+                { id: '4', name: 'Done', order: 3, color: '#10b981' }
+              ],
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            await db.collection('boards').add(board);
+            log(`✅ Created board for ${projectData.name}`, 'success');
+          }
+        }
+
+        // Step 4: Reassign all tasks
+        log('Step 4: Finding and reassigning all tasks...', 'header');
+        
+        const allTasks = await db.collection('tasks').get();
+        log(`Found ${allTasks.size} total tasks`, 'info');
+
+        const aiKeywords = [
+          'ai', 'api', 'backend', 'frontend', 'code', 'programming', 
+          'debug', 'deploy', 'build', 'test', 'component', 'function',
+          'react', 'javascript', 'typescript', 'database', 'firebase',
+          'netlify', 'node', 'npm', 'git', 'development', 'bug', 'fix',
+          'implement', 'feature', 'update', 'refactor', 'optimize',
+          'task manager', 'boardly', 'kanban', 'auth', 'user', 'project board'
+        ];
+
+        let tasksUpdated = 0;
+        let aiTasksCount = 0;
+        let dailyTasksCount = 0;
+        
+        // Process in batches to avoid overwhelming the UI
+        const batch = db.batch();
+        
+        for (const doc of allTasks.docs) {
+          const task = doc.data();
+          const taskText = `${task.title || ''} ${task.description || ''}`.toLowerCase();
+          
+          const isAiTask = aiKeywords.some(keyword => taskText.includes(keyword));
+          const targetProjectId = isAiTask ? aiTasksId : dailyTasksId;
+          
+          if (isAiTask) {
+            aiTasksCount++;
+          } else {
+            dailyTasksCount++;
+          }
+
+          batch.update(doc.ref, {
+            userId: chrisUserId,
+            assigneeId: chrisUserId,
+            assignee_id: chrisUserId,
+            assignee_name: 'Chris',
+            projectId: targetProjectId,
+            project_id: targetProjectId,
+            project_name: isAiTask ? 'AI Tasks' : 'Daily Tasks',
+            columnId: '1',
+            column_name: 'To Do',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          tasksUpdated++;
+          
+          if (tasksUpdated % 10 === 0) {
+            log(`Processing... ${tasksUpdated} tasks updated`, 'info');
+          }
+        }
+
+        await batch.commit();
+        log(`✅ Updated all ${tasksUpdated} tasks`, 'success');
+
+        // Step 5: Remove other projects
+        log('Step 5: Removing other projects...', 'header');
+        
+        let projectsDeleted = 0;
+        const projectsToDelete = await db.collection('projects')
+          .where('userId', '==', chrisUserId)
+          .get();
+
+        for (const doc of projectsToDelete.docs) {
+          const project = doc.data();
+          if (project.name !== 'Daily Tasks' && project.name !== 'AI Tasks') {
+            await doc.ref.delete();
+            log(`🗑️ Deleted project: ${project.name}`, 'warning');
+            projectsDeleted++;
+            
+            // Delete associated boards
+            const boards = await db.collection('boards')
+              .where('projectId', '==', doc.id)
+              .get();
+            
+            for (const boardDoc of boards.docs) {
+              await boardDoc.ref.delete();
+            }
+          }
+        }
+
+        // Show summary
+        log('✅ Recovery Complete!', 'header');
+        log(`Total tasks: ${tasksUpdated}`, 'success');
+        log(`AI Tasks: ${aiTasksCount}`, 'success');
+        log(`Daily Tasks: ${dailyTasksCount}`, 'success');
+        log(`Projects removed: ${projectsDeleted}`, 'success');
+
+        // Update summary display
+        document.getElementById('totalTasks').textContent = tasksUpdated;
+        document.getElementById('aiTasks').textContent = aiTasksCount;
+        document.getElementById('dailyTasks').textContent = dailyTasksCount;
+        document.getElementById('projectsDeleted').textContent = projectsDeleted;
+        document.getElementById('summary').style.display = 'block';
+
+      } catch (error) {
+        log(`❌ Recovery failed: ${error.message}`, 'error');
+        console.error('Full error:', error);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Start Recovery';
+      }
+    }
+  </script>
+</body>
+</html>

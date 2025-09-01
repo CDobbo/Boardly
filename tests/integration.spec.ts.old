@@ -1,0 +1,192 @@
+import { test, expect } from './helpers/fixtures';
+
+test.describe('Integration Tests', () => {
+  test('should complete a full workflow', async ({ page, testUtils, authenticatedPage }) => {
+    // Navigate to Projects
+    await page.click('text=Projects');
+    await page.waitForURL(/\/projects/);
+    
+    // Create a project
+    await testUtils.createProject('Integration Test Project', 'Testing complete workflow');
+    
+    // Navigate to the project
+    await page.click('text=Integration Test Project');
+    
+    // Add tasks to kanban board
+    const todoColumn = page.locator('div:has-text("To Do")').first();
+    const addButton = todoColumn.locator('button:has-text("+"), button:has-text("Add")');
+    
+    // Create first task
+    await addButton.click();
+    await page.fill('input[placeholder="Task title"]', 'Design Feature');
+    await page.fill('textarea[placeholder="Task description"]', 'Create design mockups');
+    await page.click('button:has-text("Add"), button:has-text("Create")');
+    
+    // Create second task
+    await addButton.click();
+    await page.fill('input[placeholder="Task title"]', 'Implement Feature');
+    await page.fill('textarea[placeholder="Task description"]', 'Write the code');
+    await page.click('button:has-text("Add"), button:has-text("Create")');
+    
+    // Move first task to In Progress
+    await testUtils.dragAndDrop('Design Feature', 'div:has-text("In Progress")');
+    
+    // Navigate to Calendar
+    await page.click('text=Calendar');
+    await page.waitForURL(/\/calendar/);
+    
+    // Create an event
+    await testUtils.createEvent('Sprint Planning', 'Planning meeting for next sprint', '10:00', '11:00');
+    
+    // Navigate to My Tasks
+    await page.click('text=My Tasks');
+    await page.waitForURL(/\/my-tasks/);
+    
+    // Create a personal task
+    await testUtils.createTask('Review Code', 'Review pull requests', 'high');
+    
+    // Verify dashboard shows summary
+    await page.click('text=Dashboard');
+    await page.waitForURL(/\/dashboard/);
+    
+    // Check if dashboard displays created items
+    await expect(page.locator('text=/Tasks|Projects|Events/')).toBeVisible();
+  });
+
+  test('should handle concurrent operations', async ({ page, testUtils, authenticatedPage }) => {
+    await page.click('text=My Tasks');
+    await page.waitForURL(/\/my-tasks/);
+    
+    // Create multiple tasks quickly
+    const taskPromises = [];
+    for (let i = 1; i <= 5; i++) {
+      taskPromises.push(
+        testUtils.createTask(`Concurrent Task ${i}`, `Description ${i}`, 'medium')
+      );
+    }
+    
+    await Promise.all(taskPromises);
+    
+    // Verify all tasks are created
+    for (let i = 1; i <= 5; i++) {
+      await expect(page.locator(`text=Concurrent Task ${i}`)).toBeVisible();
+    }
+  });
+
+  test('should maintain data consistency across pages', async ({ page, testUtils, authenticatedPage }) => {
+    // Create a task in My Tasks
+    await page.click('text=My Tasks');
+    await page.waitForURL(/\/my-tasks/);
+    await testUtils.createTask('Consistency Test Task', 'Testing data consistency', 'high');
+    
+    // Navigate to Dashboard and verify task count
+    await page.click('text=Dashboard');
+    await page.waitForURL(/\/dashboard/);
+    const taskCount = page.locator('text=/1 task|Tasks: 1/');
+    if (await taskCount.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expect(taskCount).toBeVisible();
+    }
+    
+    // Navigate back to My Tasks and verify task is still there
+    await page.click('text=My Tasks');
+    await page.waitForURL(/\/my-tasks/);
+    await expect(page.locator('text=Consistency Test Task')).toBeVisible();
+  });
+
+  test('should handle session persistence', async ({ page, testUtils }) => {
+    // Register and login
+    const { email, password } = await testUtils.registerAndLogin();
+    
+    // Create some data
+    await page.click('text=My Tasks');
+    await page.waitForURL(/\/my-tasks/);
+    await testUtils.createTask('Persistent Task', 'Should survive logout/login', 'low');
+    
+    // Logout
+    await testUtils.logout();
+    
+    // Login again
+    await testUtils.login(email, password);
+    
+    // Verify data persists
+    await page.click('text=My Tasks');
+    await page.waitForURL(/\/my-tasks/);
+    await expect(page.locator('text=Persistent Task')).toBeVisible();
+  });
+
+  test('should handle navigation without data loss', async ({ page, testUtils, authenticatedPage }) => {
+    // Start creating a task
+    await page.click('text=My Tasks');
+    await page.waitForURL(/\/my-tasks/);
+    await page.click('button:has-text("Create Task")');
+    await page.fill('input[placeholder="Enter task title"]', 'Navigation Test Task');
+    
+    // Navigate away (cancel if confirmation appears)
+    await page.click('text=Dashboard');
+    
+    // Handle navigation confirmation if it appears
+    const cancelButton = page.locator('button:has-text("Cancel")');
+    if (await cancelButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await cancelButton.click();
+      // Complete the task creation
+      await page.click('button:has-text("Create")');
+      await page.waitForSelector('text=Navigation Test Task');
+    }
+    
+    // Navigate to dashboard
+    await page.click('text=Dashboard');
+    await page.waitForURL(/\/dashboard/);
+  });
+
+  test('should display proper error messages', async ({ page }) => {
+    await page.goto('/login');
+    
+    // Try login with empty fields
+    await page.click('button[type="submit"]');
+    const emailError = page.locator('text=/Email is required|Please enter email/');
+    if (await emailError.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expect(emailError).toBeVisible();
+    }
+    
+    // Try login with invalid email format
+    await page.fill('input[type="email"]', 'invalid-email');
+    await page.fill('input[type="password"]', 'password123');
+    await page.click('button[type="submit"]');
+    const formatError = page.locator('text=/Invalid email|Please enter a valid email/');
+    if (await formatError.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expect(formatError).toBeVisible();
+    }
+  });
+
+  test('should handle theme switching', async ({ page, testUtils, authenticatedPage }) => {
+    // Look for theme toggle
+    const themeToggle = page.locator('button[aria-label="Toggle theme"], button:has-text("Theme")');
+    
+    if (await themeToggle.isVisible({ timeout: 1000 }).catch(() => false)) {
+      // Get initial theme
+      const initialTheme = await page.evaluate(() => {
+        return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      });
+      
+      // Toggle theme
+      await themeToggle.click();
+      
+      // Verify theme changed
+      const newTheme = await page.evaluate(() => {
+        return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      });
+      
+      expect(newTheme).not.toBe(initialTheme);
+      
+      // Verify theme persists on navigation
+      await page.click('text=My Tasks');
+      await page.waitForURL(/\/my-tasks/);
+      
+      const persistedTheme = await page.evaluate(() => {
+        return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      });
+      
+      expect(persistedTheme).toBe(newTheme);
+    }
+  });
+});

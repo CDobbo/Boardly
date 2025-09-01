@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migrate Tasks to Chris</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .container { background: #f5f5f5; padding: 20px; border-radius: 8px; }
+        .button { background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 10px 0; }
+        .button:hover { background: #005a85; }
+        .button:disabled { background: #ccc; cursor: not-allowed; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 4px; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .loading { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .migrate-btn { background: #28a745; font-size: 16px; padding: 15px 25px; }
+        .migrate-btn:hover { background: #218838; }
+        .task-list { background: #e9ecef; padding: 15px; margin: 15px 0; border-radius: 5px; font-family: monospace; font-size: 11px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Migrate Tasks to chris@chris.com</h1>
+        <p>This will assign all the specified tasks to chris@chris.com and also look for related projects to migrate.</p>
+        
+        <div class="task-list">
+            <h3>📋 Tasks to migrate:</h3>
+            <div>1. "Write up localisation progress" (ID: 1)</div>
+            <div>2. "Hand over SEO" (ID: 10)</div>
+            <div>3. "Review and update Sharepoint" (ID: 11)</div>
+            <div>4. "Create survey for i2" (ID: 12)</div>
+            <div>5. "Update Viva Engage with Survey" (ID: 13)</div>
+            <div>6. "Demo AI to John" (ID: 14)</div>
+            <div>7. "Update workday business titles" (ID: 15)</div>
+            <div>8. "Catch up with Ricardo about Tony moving back" (ID: 16)</div>
+            <div>9. "Create a database of all previous applicants" (ID: 17)</div>
+            <div>10. "Write up survey questions for EVP & SVPs" (ID: 2)</div>
+            <div>11. "Go through Jira and update all tickets to reflect proper release versions" (ID: 20)</div>
+            <div>12. "Set up another foxly refinement session" (ID: 21)</div>
+            <div>13. "Ping Steve about JML" (ID: 22)</div>
+            <div>14. "Create a couple of slides for learning series" (ID: 23)</div>
+            <div>15. "Write up pack for Vibe Coding challenge" (ID: 3)</div>
+            <div>16. "Come up with a 3, 6 and 9 month plan" (ID: 4)</div>
+            <div>17. "Create a list of prototypes that we could do to support smaller BUs" (ID: 5)</div>
+            <div>18. "Write up APR for Insights" (ID: 7)</div>
+            <div>19. "Write up APR for ANB" (ID: 8)</div>
+            <div>20. "Write up APR for iBase" (ID: 9)</div>
+        </div>
+        
+        <div id="authSection">
+            <h3>🔐 Sign in to perform migration</h3>
+            <button class="button" onclick="signInAsChris()">Sign in as chris@chris.com</button>
+            <div id="userInfo" style="display: none;">
+                <p>Signed in as: <span id="userEmail"></span></p>
+                <button class="button migrate-btn" onclick="migrateTasks()" id="migrateBtn">🔄 Migrate All Tasks to chris@chris.com</button>
+                <button class="button" onclick="signOut()" style="background: #dc3545;">Sign Out</button>
+            </div>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDe2MxZlVfHT0p9qvUT2cnq5-CUUOLlMJU",
+            authDomain: "boardly-95104.firebaseapp.com",
+            projectId: "boardly-95104",
+            storageBucket: "boardly-95104.firebasestorage.app",
+            messagingSenderId: "278347808379",
+            appId: "1:278347808379:web:649a8774a9f88f010cecde"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('userInfo').style.display = 'block';
+                document.querySelector('#authSection button').style.display = 'none';
+            } else {
+                document.getElementById('userInfo').style.display = 'none';
+                document.querySelector('#authSection button').style.display = 'block';
+            }
+        });
+
+        window.signInAsChris = async () => {
+            try {
+                await signInWithEmailAndPassword(auth, 'chris@chris.com', 'Test123');
+                showResult('✅ Signed in as chris@chris.com successfully!', 'success');
+            } catch (error) {
+                showResult(`❌ Sign in failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.signOut = async () => {
+            try {
+                await signOut(auth);
+                document.getElementById('result').innerHTML = '';
+                showResult('👋 Signed out successfully', 'success');
+            } catch (error) {
+                showResult(`❌ Sign out failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.migrateTasks = async () => {
+            if (!currentUser) {
+                showResult('❌ Please sign in first', 'error');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to migrate all these tasks to chris@chris.com? This will change the ownership of 20 tasks and related projects.')) {
+                return;
+            }
+
+            try {
+                const btn = document.getElementById('migrateBtn');
+                btn.disabled = true;
+                btn.textContent = '🔄 Migrating Tasks...';
+                
+                showResult('🔄 Starting task migration to chris@chris.com...', 'loading');
+
+                const token = await currentUser.getIdToken();
+                
+                const response = await fetch('/.netlify/functions/migrate-tasks-to-chris', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    let output = `✅ MIGRATION COMPLETED!\n\n`;
+                    output += `🎯 Target User: chris@chris.com (UID: ${data.chrisUid})\n\n`;
+                    
+                    output += `📋 TASK MIGRATION RESULTS:\n`;
+                    output += `Total tasks processed: ${data.tasks.total}\n`;
+                    output += `Successfully migrated: ${data.tasks.successful}\n`;
+                    output += `Failed: ${data.tasks.failed}\n`;
+                    output += `Not found: ${data.tasks.notFound}\n\n`;
+
+                    if (data.tasks.details.successful.length > 0) {
+                        output += `✅ SUCCESSFULLY MIGRATED TASKS:\n`;
+                        data.tasks.details.successful.forEach((task, i) => {
+                            output += `  ${i+1}. "${task.title}" (ID: ${task.id})\n`;
+                            output += `     Previous owner: ${task.previousUserId}\n`;
+                        });
+                        output += `\n`;
+                    }
+
+                    if (data.tasks.details.failed.length > 0) {
+                        output += `❌ FAILED TASKS:\n`;
+                        data.tasks.details.failed.forEach((task, i) => {
+                            output += `  ${i+1}. ID: ${task.id} - Error: ${task.error}\n`;
+                        });
+                        output += `\n`;
+                    }
+
+                    if (data.tasks.details.notFound.length > 0) {
+                        output += `❓ NOT FOUND TASKS:\n`;
+                        output += `  IDs: ${data.tasks.details.notFound.join(', ')}\n\n`;
+                    }
+
+                    output += `📁 PROJECT MIGRATION RESULTS:\n`;
+                    output += `Projects found: ${data.projects.found}\n`;
+                    output += `Projects migrated: ${data.projects.migrated}\n\n`;
+
+                    if (data.projects.details.length > 0) {
+                        output += `✅ MIGRATED PROJECTS:\n`;
+                        data.projects.details.forEach((project, i) => {
+                            output += `  ${i+1}. "${project.name}" (ID: ${project.id})\n`;
+                        });
+                        output += `\n`;
+                    }
+
+                    output += `🎉 Migration completed! chris@chris.com now has access to ${data.tasks.successful} tasks and ${data.projects.migrated} projects.\n`;
+                    output += `\nYou can now log into the main app as chris@chris.com to see the migrated data!`;
+
+                    showResult(output, 'success');
+                } else {
+                    showResult(`❌ Migration failed: ${data.error}`, 'error');
+                }
+                
+            } catch (error) {
+                showResult(`❌ Network error: ${error.message}`, 'error');
+            } finally {
+                const btn = document.getElementById('migrateBtn');
+                btn.disabled = false;
+                btn.textContent = '🔄 Migrate All Tasks to chris@chris.com';
+            }
+        };
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+    </script>
+</body>
+</html>

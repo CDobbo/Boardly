@@ -1,0 +1,194 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Task Management', () => {
+  let testEmail: string;
+  
+  test.beforeEach(async ({ page, request }) => {
+    // Create a unique user for each test
+    const timestamp = Date.now();
+    testEmail = `test${timestamp}@example.com`;
+    
+    // Register and login
+    await page.goto('/register');
+    await page.fill('input[placeholder="John Doe"]', 'Test User');
+    await page.fill('input[type="email"]', testEmail);
+    await page.fill('input[type="password"]', 'TestPassword123!');
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/$/);
+    
+    // Get auth token from localStorage
+    const token = await page.evaluate(() => localStorage.getItem('token'));
+    
+    // Create a project via API
+    const projectResponse = await request.post('http://localhost:5003/api/projects', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      data: {
+        name: 'Test Project',
+        description: 'Project for testing tasks'
+      }
+    });
+    
+    const project = await projectResponse.json();
+    
+    // Navigate directly to the project board
+    await page.goto(`/projects/${project.id}`);
+    await page.waitForLoadState('networkidle');
+  });
+
+  test('should create a new task', async ({ page }) => {
+    // Wait for Kanban board container to load
+    await page.waitForSelector('.flex.gap-4.overflow-x-auto, .bg-muted', { timeout: 10000 });
+    
+    // Try to find "Add Task" button in any column
+    const addTaskButton = page.locator('button:has-text("Add Task")').first();
+    await addTaskButton.waitFor({ timeout: 5000 });
+    await addTaskButton.click();
+    
+    // Fill in task details
+    await page.waitForSelector('input[placeholder="Enter task title"]');
+    await page.fill('input[placeholder="Enter task title"]', 'Test Task');
+    await page.fill('textarea[placeholder="Enter task description"]', 'This is a test task description');
+    
+    // Select priority if available
+    const prioritySelect = page.locator('select[name="priority"]');
+    if (await prioritySelect.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await prioritySelect.selectOption('high');
+    }
+    
+    // Set due date if available
+    const dateInput = page.locator('input[type="date"]');
+    if (await dateInput.isVisible({ timeout: 1000 }).catch(() => false)) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const dateString = tomorrow.toISOString().split('T')[0];
+      await dateInput.fill(dateString);
+    }
+    
+    // Submit the task
+    await page.click('button:has-text("Create Task")');
+    
+    // Verify task appears somewhere on the board
+    await page.waitForSelector('text=Test Task', { timeout: 5000 });
+    await expect(page.locator('text=Test Task')).toBeVisible();
+  });
+
+  test('should edit an existing task', async ({ page }) => {
+    // Create a task first
+    await page.click('button:has-text("Add Task")');
+    await page.fill('input[placeholder="Enter task title"]', 'Original Task');
+    await page.fill('textarea[placeholder="Enter task description"]', 'Original description');
+    await page.click('button:has-text("Create Task")');
+    await page.waitForSelector('text=Original Task');
+    
+    // Edit the task
+    await page.click('button[aria-label="Edit task"]');
+    await page.fill('input[value="Original Task"]', 'Updated Task');
+    await page.fill('textarea', 'Updated description');
+    await page.click('button:has-text("Save")');
+    
+    // Verify changes
+    await expect(page.locator('text=Updated Task')).toBeVisible();
+    await expect(page.locator('text=Updated description')).toBeVisible();
+  });
+
+  test('should delete a task', async ({ page }) => {
+    // Create a task
+    await page.click('button:has-text("Add Task")');
+    await page.fill('input[placeholder="Enter task title"]', 'Task to Delete');
+    await page.fill('textarea[placeholder="Enter task description"]', 'This task will be deleted');
+    await page.click('button:has-text("Create Task")');
+    await page.waitForSelector('text=Task to Delete');
+    
+    // Delete the task
+    await page.click('button[aria-label="Delete task"]');
+    
+    // Confirm deletion if there's a confirmation dialog
+    const confirmButton = page.locator('button:has-text("Confirm")');
+    if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await confirmButton.click();
+    }
+    
+    // Verify task is gone
+    await expect(page.locator('text=Task to Delete')).not.toBeVisible();
+  });
+
+  test('should filter tasks by status', async ({ page }) => {
+    // Create tasks in different columns by dragging them or adding to specific columns
+    // Since tasks in Kanban are organized by columns, we'll create tasks and verify column separation
+    const tasks = [
+      { title: 'Todo Task', column: 'To Do' },
+      { title: 'In Progress Task', column: 'In Progress' },
+      { title: 'Done Task', column: 'Done' }
+    ];
+    
+    for (const task of tasks) {
+      // Find the column and add task to it
+      const columnLocator = page.locator(`[data-testid="column-${task.column}"], .kanban-column:has-text("${task.column}")`).first();
+      const addTaskButton = columnLocator.locator('button:has-text("Add Task")');
+      
+      if (await addTaskButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await addTaskButton.click();
+        await page.fill('input[placeholder="Enter task title"]', task.title);
+        await page.fill('textarea[placeholder="Enter task description"]', `Description for ${task.title}`);
+        await page.click('button:has-text("Create Task")');
+        await page.waitForSelector(`text=${task.title}`);
+      }
+    }
+    
+    // Verify tasks appear in their respective columns
+    for (const task of tasks) {
+      const taskElement = page.locator(`text=${task.title}`);
+      await expect(taskElement).toBeVisible();
+    }
+  });
+
+  test('should mark task as complete', async ({ page }) => {
+    // Create a task first
+    await page.click('button:has-text("Add Task")');
+    await page.fill('input[placeholder="Enter task title"]', 'Task to Complete');
+    await page.fill('textarea[placeholder="Enter task description"]', 'This task will be completed');
+    await page.click('button:has-text("Create Task")');
+    await page.waitForSelector('text=Task to Complete');
+    
+    // Drag task to Done column or edit task status
+    const taskCard = page.locator('text=Task to Complete').locator('..');
+    const doneColumn = page.locator('.kanban-column:has-text("Done"), [data-testid="column-Done"]').first();
+    
+    try {
+      // Try to drag and drop to Done column
+      await taskCard.dragTo(doneColumn);
+      // Verify task moved to Done column
+      await expect(doneColumn.locator('text=Task to Complete')).toBeVisible();
+    } catch {
+      // Fallback: Edit task and change status
+      await page.click('button[aria-label="Edit task"]');
+      await page.selectOption('select[name="status"]', 'Done');
+      await page.click('button:has-text("Save")');
+    }
+  });
+
+  test('should display task priority correctly', async ({ page }) => {
+    const priorities = ['low', 'medium', 'high'];
+    
+    for (const priority of priorities) {
+      await page.click('button:has-text("Add Task")');
+      await page.fill('input[placeholder="Enter task title"]', `${priority} Priority Task`);
+      await page.fill('textarea[placeholder="Enter task description"]', `Task with ${priority} priority`);
+      await page.selectOption('select[name="priority"]', priority);
+      await page.click('button:has-text("Create Task")');
+      await page.waitForSelector(`text=${priority} Priority Task`);
+    }
+    
+    // Verify priority indicators are visible
+    for (const priority of priorities) {
+      const taskCard = page.locator(`text=${priority} Priority Task`).locator('..');
+      await expect(taskCard).toBeVisible();
+      // Check for priority badge or indicator - look for the priority text in any form
+      const priorityIndicator = taskCard.locator(`text=${priority}`);
+      await expect(priorityIndicator).toBeVisible();
+    }
+  });
+});

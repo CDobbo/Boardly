@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm ci:*)",
+      "Bash(npm run build:*)",
+      "Bash(node:*)",
+      "Bash(npm install)",
+      "Bash(git check-ignore:*)",
+      "Bash(grep:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\AI\\backend",
+      "C:\\AI\\frontend\\netlify"
+    ]
+  }
+}

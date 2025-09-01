@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regenerate Demo Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { background: #f5f5f5; padding: 20px; border-radius: 8px; }
+        .button { background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 10px 0; }
+        .button:hover { background: #005a85; }
+        .button:disabled { background: #ccc; cursor: not-allowed; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 4px; white-space: pre-wrap; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .loading { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Regenerate Demo Data</h1>
+        <p>This will completely regenerate all projects and tasks for the demo user with clean dummy data.</p>
+        
+        <div id="authSection">
+            <h3>🔐 Authentication Required</h3>
+            <p>Please sign in first to regenerate your data.</p>
+            <button class="button" onclick="signInWithGoogle()">Sign in with Firebase</button>
+            <div id="userInfo" style="display: none;">
+                <p>Signed in as: <span id="userEmail"></span></p>
+                <button class="button" onclick="regenerateData()" id="regenerateBtn">🧹 Regenerate Data</button>
+                <button class="button" onclick="signOut()" style="background: #dc3545;">Sign Out</button>
+            </div>
+        </div>
+        
+        <div id="result"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDe2MxZlVfHT0p9qvUT2cnq5-CUUOLlMJU",
+            authDomain: "boardly-95104.firebaseapp.com",
+            projectId: "boardly-95104",
+            storageBucket: "boardly-95104.firebasestorage.app",
+            messagingSenderId: "278347808379",
+            appId: "1:278347808379:web:649a8774a9f88f010cecde"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('userInfo').style.display = 'block';
+                document.querySelector('#authSection button').style.display = 'none';
+            } else {
+                document.getElementById('userInfo').style.display = 'none';
+                document.querySelector('#authSection button').style.display = 'block';
+            }
+        });
+
+        window.signInWithGoogle = async () => {
+            try {
+                // Use demo credentials for quick testing
+                await signInWithEmailAndPassword(auth, 'demo@taskmanager.com', 'Test123');
+                showResult('✅ Signed in successfully!', 'success');
+            } catch (error) {
+                showResult(`❌ Sign in failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.signOut = async () => {
+            try {
+                await signOut(auth);
+                document.getElementById('result').innerHTML = '';
+                showResult('👋 Signed out successfully', 'success');
+            } catch (error) {
+                showResult(`❌ Sign out failed: ${error.message}`, 'error');
+            }
+        };
+
+        window.regenerateData = async () => {
+            if (!currentUser) {
+                showResult('❌ Please sign in first', 'error');
+                return;
+            }
+
+            try {
+                const btn = document.getElementById('regenerateBtn');
+                btn.disabled = true;
+                btn.textContent = '🔄 Regenerating...';
+                
+                showResult('🔄 Starting data regeneration...', 'loading');
+
+                const token = await currentUser.getIdToken();
+                
+                const response = await fetch('/.netlify/functions/regenerate-data', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ Success! 
+Projects created: ${data.projectsCreated}
+Tasks created: ${data.tasksCreated}
+
+Created projects:
+${data.projects.map(p => `• ${p.name} (ID: ${p.id})`).join('\n')}
+
+You can now go back to the main app and see the clean data!`, 'success');
+                } else {
+                    showResult(`❌ Error: ${data.error}`, 'error');
+                }
+                
+            } catch (error) {
+                showResult(`❌ Network error: ${error.message}`, 'error');
+            } finally {
+                const btn = document.getElementById('regenerateBtn');
+                btn.disabled = false;
+                btn.textContent = '🧹 Regenerate Data';
+            }
+        };
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+    </script>
+</body>
+</html>
