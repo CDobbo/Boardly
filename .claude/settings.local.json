@@ -10,7 +10,10 @@
       "Bash(git add:*)",
       "Bash(git reset:*)",
       "Bash(npm audit:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npm run start:backend:*)",
+      "Bash(npm run start:frontend:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": [],
