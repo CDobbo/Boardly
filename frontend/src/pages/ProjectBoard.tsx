@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Settings, Users, Search } from 'lucide-react';
-import { projectsAPI, boardsAPI } from '../lib/api';
+import { projectsAPI, boardsAPI, tasksAPI } from '../lib/api';
 import { KanbanBoard } from '../components/KanbanBoard';
+import { TaskEditDialog } from '../components/TaskEditDialog';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 
@@ -12,6 +13,22 @@ interface Project {
   name: string;
   description?: string;
   role: string;
+}
+
+interface Task {
+  id: number;
+  title: string;
+  description?: string;
+  priority: string;
+  assignee_name?: string;
+  assignee_id?: number;
+  due_date?: string;
+  columnId: number;
+  projectId?: number;
+  position: number;
+  diary_entry_id?: number;
+  diary_entry_title?: string;
+  diary_entry_date?: string;
 }
 
 interface Board {
@@ -23,26 +40,20 @@ interface Board {
     name: string;
     position: number;
   }>;
-  tasks: Array<{
-    id: number;
-    title: string;
-    description?: string;
-    priority: string;
-    assignee_name?: string;
-    due_date?: string;
-    columnId: number;
-    position: number;
-  }>;
+  tasks: Task[];
 }
 
 export const ProjectBoard: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [project, setProject] = useState<Project | null>(null);
   const [boards, setBoards] = useState<Board[]>([]);
   const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -50,6 +61,47 @@ export const ProjectBoard: React.FC = () => {
       loadBoards(id);
     }
   }, [id]);
+
+  const handleTaskClick = useCallback(async (taskId: number) => {
+    try {
+      // Find task in current board data
+      let task = selectedBoard?.tasks.find(t => t.id === taskId);
+      
+      if (!task) {
+        // If not found in current board, fetch from API
+        const response = await tasksAPI.getOne(String(taskId));
+        task = response.data;
+      }
+      
+      if (task) {
+        setSelectedTask(task);
+        setTaskDialogOpen(true);
+        // Update URL without taskId to prevent reopening
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('taskId');
+        setSearchParams(newSearchParams);
+      }
+    } catch (error) {
+      console.error('Failed to load task:', error);
+    }
+  }, [selectedBoard, searchParams, setSearchParams]);
+
+  const handleTaskDialogClose = () => {
+    setTaskDialogOpen(false);
+    setSelectedTask(null);
+  };
+
+  const handleTaskUpdate = () => {
+    handleRefresh();
+  };
+
+  // Handle taskId URL parameter
+  useEffect(() => {
+    const taskId = searchParams.get('taskId');
+    if (taskId && selectedBoard) {
+      handleTaskClick(parseInt(taskId));
+    }
+  }, [searchParams, selectedBoard, handleTaskClick]);
 
   const loadProject = async (projectId: string) => {
     try {
@@ -174,6 +226,15 @@ export const ProjectBoard: React.FC = () => {
       <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
         <KanbanBoard board={selectedBoard} onRefresh={handleRefresh} />
       </div>
+
+      {selectedTask && (
+        <TaskEditDialog
+          task={selectedTask}
+          open={taskDialogOpen}
+          onOpenChange={setTaskDialogOpen}
+          onUpdate={handleTaskUpdate}
+        />
+      )}
     </div>
   );
 };

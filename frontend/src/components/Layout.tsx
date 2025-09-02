@@ -1,11 +1,12 @@
 import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, Folder, LogOut, User, Menu, X, Plus, ChevronDown, ChevronRight, CheckSquare, Shield, Calendar, Target, BookOpen } from 'lucide-react';
+import { Home, Folder, LogOut, User, Menu, X, Plus, ChevronDown, ChevronRight, CheckSquare, Shield, Calendar, Target, BookOpen, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { projectsAPI } from '../lib/api';
 import { Button } from './ui/button';
 import { ThemeToggle } from './ThemeToggle';
+import { TaskSearch } from './TaskSearch';
 import { cn } from '../lib/utils';
 import version from '../version.json';
 
@@ -27,6 +28,7 @@ export const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [projectsExpanded, setProjectsExpanded] = React.useState(true);
+  const [searchExpanded, setSearchExpanded] = React.useState(false);
   const [loadingProjects, setLoadingProjects] = React.useState(false);
 
   React.useEffect(() => {
@@ -97,6 +99,45 @@ export const Layout: React.FC = () => {
           </div>
 
           <nav className="flex-1 space-y-1 px-3 py-4">
+            {/* Search Section */}
+            <div className="mb-4">
+              <div className="flex items-center w-full">
+                <button
+                  onClick={() => setSearchExpanded(!searchExpanded)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors flex-1",
+                    searchExpanded
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                  )}
+                >
+                  <Search className="h-5 w-5" />
+                  Search Tasks
+                </button>
+                <button
+                  onClick={() => setSearchExpanded(!searchExpanded)}
+                  className="p-2 rounded-lg transition-colors text-foreground hover:bg-accent"
+                >
+                  {searchExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              
+              {searchExpanded && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-3 px-3"
+                >
+                  <TaskSearch />
+                </motion.div>
+              )}
+            </div>
+
             {navItems.map((item) => (
               <div key={item.path}>
                 {item.path === '/projects' ? (

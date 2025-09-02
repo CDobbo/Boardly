@@ -35,6 +35,54 @@ const checkTaskAccess = (req, res, next) => {
   next();
 };
 
+router.get('/search/global', (req, res, next) => {
+  try {
+    const { q, status, priority, assigneeId } = req.query;
+
+    let query = `
+      SELECT t.*, u.name as assignee_name, u.email as assignee_email,
+        c.name as column_name, b.name as board_name, p.name as project_name,
+        p.id as project_id
+      FROM tasks t
+      LEFT JOIN users u ON t.assignee_id = u.id
+      JOIN columns c ON t.column_id = c.id
+      JOIN boards b ON c.board_id = b.id
+      JOIN projects p ON b.project_id = p.id
+      JOIN project_members pm ON p.id = pm.project_id
+      WHERE pm.user_id = ?
+    `;
+
+    const params = [req.user.id];
+
+    if (q && q.trim()) {
+      query += ` AND (t.title LIKE ? OR t.description LIKE ?)`;
+      params.push(`%${q}%`, `%${q}%`);
+    }
+
+    if (status) {
+      query += ` AND c.name = ?`;
+      params.push(status);
+    }
+
+    if (priority) {
+      query += ` AND t.priority = ?`;
+      params.push(priority);
+    }
+
+    if (assigneeId) {
+      query += ` AND t.assignee_id = ?`;
+      params.push(assigneeId);
+    }
+
+    query += ` ORDER BY t.updated_at DESC LIMIT 100`;
+
+    const tasks = db.prepare(query).all(...params);
+    res.json(tasks);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/search', (req, res, next) => {
   try {
     const { q, projectId, status, priority, assigneeId } = req.query;

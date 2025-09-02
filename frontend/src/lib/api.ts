@@ -97,6 +97,12 @@ export const tasksAPI = {
     priority?: string;
     assigneeId?: string;
   }) => api.get('/tasks/search', { params }),
+  searchGlobal: (params: {
+    q?: string;
+    status?: string;
+    priority?: string;
+    assigneeId?: string;
+  }) => api.get('/tasks/search/global', { params }),
   getStats: (projectId: string) => api.get(`/tasks/stats/${projectId}`),
   getMyTasks: () => api.get('/tasks/my-tasks'),
   getMyStats: () => api.get('/tasks/my-stats'),
