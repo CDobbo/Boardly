@@ -1,0 +1,89 @@
+name: Dependency Check
+
+# Run weekly and on manual trigger
+on:
+  schedule:
+    - cron: '0 4 * * 1' # Every Monday at 4 AM UTC
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  check-dependencies:
+    name: Check for Updates & Vulnerabilities
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Check Frontend Dependencies
+        working-directory: ./frontend
+        run: |
+          echo "## 📦 Frontend Dependency Report"
+          echo ""
+          
+          echo "### Installing dependencies..."
+          npm ci
+          echo ""
+          
+          echo "### 🔍 Security Vulnerabilities:"
+          npm audit || true
+          echo ""
+          
+          echo "### 📊 Outdated Packages:"
+          npm outdated || true
+          echo ""
+          
+          echo "### 💡 Update Commands:"
+          echo "To update all dependencies (minor/patch):"
+          echo "  cd frontend && npm update"
+          echo ""
+          echo "To update a specific package to latest:"
+          echo "  cd frontend && npm install package-name@latest"
+          echo ""
+      
+      - name: Check Backend Dependencies
+        working-directory: ./backend
+        run: |
+          echo "## 📦 Backend Dependency Report"
+          echo ""
+          
+          echo "### Installing dependencies..."
+          npm ci
+          echo ""
+          
+          echo "### 🔍 Security Vulnerabilities:"
+          npm audit || true
+          echo ""
+          
+          echo "### 📊 Outdated Packages:"
+          npm outdated || true
+          echo ""
+          
+          echo "### 💡 Update Commands:"
+          echo "To update all dependencies (minor/patch):"
+          echo "  cd backend && npm update"
+          echo ""
+          echo "To update a specific package to latest:"
+          echo "  cd backend && npm install package-name@latest"
+          echo ""
+      
+      - name: Create Summary
+        run: |
+          echo "## 📋 Dependency Check Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This workflow runs weekly to check for:" >> $GITHUB_STEP_SUMMARY
+          echo "- Security vulnerabilities (npm audit)" >> $GITHUB_STEP_SUMMARY
+          echo "- Outdated packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the workflow logs for detailed information about updates available." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review the security vulnerabilities (if any)" >> $GITHUB_STEP_SUMMARY
+          echo "2. Update critical security patches immediately" >> $GITHUB_STEP_SUMMARY
+          echo "3. Plan updates for outdated packages" >> $GITHUB_STEP_SUMMARY
+          echo "4. Test locally after updating" >> $GITHUB_STEP_SUMMARY
