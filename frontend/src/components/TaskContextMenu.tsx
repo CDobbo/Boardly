@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { CheckCircle2, Edit, Trash2, Copy, Flag, MoreVertical } from 'lucide-react';
-import { Button } from './ui/button';
+import { CheckCircle2, Edit, Trash2, Copy, Flag } from 'lucide-react';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface TaskContextMenuProps {
   children: React.ReactNode;
@@ -23,6 +23,7 @@ export const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -47,6 +48,17 @@ export const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const handleAction = (action: () => void) => {
     action();
     setIsOpen(false);
+  };
+
+  const handleDeleteClick = () => {
+    setIsOpen(false);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (onDelete) {
+      onDelete();
+    }
   };
 
   return (
@@ -133,7 +145,7 @@ export const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
             <>
               <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
               <button
-                onClick={() => handleAction(onDelete)}
+                onClick={handleDeleteClick}
                 className="flex items-center w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -143,6 +155,17 @@ export const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
           )}
         </div>
       )}
+      
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 };

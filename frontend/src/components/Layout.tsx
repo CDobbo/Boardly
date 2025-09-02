@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home, Folder, LogOut, User, Menu, X, Plus, ChevronDown, ChevronRight, CheckSquare, Shield, Calendar, Target, BookOpen, Search } from 'lucide-react';
@@ -31,13 +31,7 @@ export const Layout: React.FC = () => {
   const [searchExpanded, setSearchExpanded] = React.useState(false);
   const [loadingProjects, setLoadingProjects] = React.useState(false);
 
-  React.useEffect(() => {
-    if (user) {
-      loadProjects();
-    }
-  }, [user]);
-
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     if (!user) return;
     
     setLoadingProjects(true);
@@ -58,7 +52,13 @@ export const Layout: React.FC = () => {
     } finally {
       setLoadingProjects(false);
     }
-  };
+  }, [user]);
+
+  React.useEffect(() => {
+    if (user) {
+      loadProjects();
+    }
+  }, [user, loadProjects]);
 
   const handleLogout = () => {
     logout();

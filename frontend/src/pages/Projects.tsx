@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Folder, Calendar, Users, Trash2, Edit, Settings } from 'lucide-react';
+import { Plus, Folder, Calendar, Users, Trash2, Settings } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { projectsAPI } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -179,7 +179,7 @@ export const Projects: React.FC = () => {
     setUpdating(true);
 
     try {
-      const response = await projectsAPI.update(String(editingProject.id), {
+      await projectsAPI.update(String(editingProject.id), {
         name: editProjectName,
         description: editProjectDescription || undefined,
         due_date: editProjectDueDate || undefined,

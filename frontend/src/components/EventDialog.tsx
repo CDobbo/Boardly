@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Calendar, Clock, MapPin, AlertCircle, Trash2 } from 'lucide-react';
+import { AlertCircle, Trash2 } from 'lucide-react';
 import { eventsAPI } from '../lib/api';
 import { Button } from './ui/button';
 import { Input } from './ui/input';

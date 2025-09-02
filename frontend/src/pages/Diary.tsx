@@ -75,7 +75,6 @@ const categoryColors = {
 export const Diary: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [groupedEntries, setGroupedEntries] = useState<DateGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [highlightEntryId, setHighlightEntryId] = useState<number | null>(null);
@@ -173,7 +172,6 @@ export const Diary: React.FC = () => {
       console.log('📔 Diary entries response:', response.data);
       console.log('📔 Entry 611:', response.data.find((e: DiaryEntry) => e.id === 611));
       console.log('📔 Entry 613 (TEST):', response.data.find((e: DiaryEntry) => e.id === 613));
-      setEntries(response.data);
       groupEntriesByDate(response.data);
     } catch (error) {
       console.error('Failed to load diary entries:', error);

@@ -3,8 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   Clock, AlertCircle, Calendar, User, 
   AlertTriangle, TrendingUp, Target,
-  EyeOff, Eye, ArrowUpDown, ChevronDown,
-  CheckCircle2
+  EyeOff, Eye, ArrowUpDown, ChevronDown
 } from 'lucide-react';
 import { tasksAPI, boardsAPI, projectsAPI } from '../lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';

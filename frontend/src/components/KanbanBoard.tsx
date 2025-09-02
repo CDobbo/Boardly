@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -10,15 +10,12 @@ import {
   useSensor,
   useSensors,
   closestCenter,
-  pointerWithin,
 } from '@dnd-kit/core';
 import {
-  SortableContext,
-  verticalListSortingStrategy,
   arrayMove,
 } from '@dnd-kit/sortable';
 import { motion } from 'framer-motion';
-import { Plus, MoreVertical } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { boardsAPI, tasksAPI } from '../lib/api';
 import { TaskCard } from './TaskCard';
 import { KanbanColumn } from './KanbanColumn';
@@ -89,13 +86,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onRefresh }) =>
     })
   );
 
-  useEffect(() => {
-    if (board) {
-      loadBoard();
-    }
-  }, [board]);
-
-  const loadBoard = async () => {
+  const loadBoard = useCallback(async () => {
     try {
       // Use the board data passed as props
       const columnsWithTasks = (board.columns || []).map(column => ({
@@ -115,7 +106,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onRefresh }) =>
     } finally {
       setLoading(false);
     }
-  };
+  }, [board]);
+
+  useEffect(() => {
+    if (board) {
+      loadBoard();
+    }
+  }, [board, loadBoard]);
 
   const handleTaskUpdate = () => {
     // Call the parent refresh to reload project and board data

@@ -36,7 +36,7 @@ export const DebugAuth: React.FC = () => {
           <p><strong>user?.role:</strong> {user?.role}</p>
           <p><strong>Type of role:</strong> {typeof user?.role}</p>
           <p><strong>Role === 'admin':</strong> {String(user?.role === 'admin')}</p>
-          <p><strong>Role == 'admin':</strong> {String(user?.role == 'admin')}</p>
+          <p><strong>Role === 'admin':</strong> {String(user?.role === 'admin')}</p>
         </div>
 
         <div className="bg-white border rounded-lg p-4">

@@ -2,12 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import { motion } from 'framer-motion';
-import { Plus, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { eventsAPI, projectsAPI, tasksAPI } from '../lib/api';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { EventDialog } from '../components/EventDialog';
-import { Badge } from '../components/ui/badge';
 import {
   Select,
   SelectContent,

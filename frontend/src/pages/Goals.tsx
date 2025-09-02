@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Target, TrendingUp, Star, Heart, Zap, Users, Shield, Plus, Calendar, CheckCircle, X, Eye, EyeOff } from 'lucide-react';
+import { Target, TrendingUp, Star, Heart, Zap, Users, Shield, Plus, Calendar, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';

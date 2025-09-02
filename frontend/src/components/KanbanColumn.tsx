@@ -4,11 +4,10 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { motion } from 'framer-motion';
 import { Plus, MoreVertical, Trash2, Edit2 } from 'lucide-react';
 import { TaskCard } from './TaskCard';
-import { TaskContextMenu } from './TaskContextMenu';
 import { TaskCreateDialog } from './TaskCreateDialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { tasksAPI, boardsAPI, projectsAPI } from '../lib/api';
+import { tasksAPI, boardsAPI } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import {
   DropdownMenu,

@@ -78,7 +78,6 @@ export const DemoGuide: React.FC = () => {
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
-  const [hasSeenGuide, setHasSeenGuide] = useState(false);
 
   // Check if current user is demo user
   const isDemoUser = user?.email === 'demo@taskmanager.com';
@@ -86,7 +85,6 @@ export const DemoGuide: React.FC = () => {
   useEffect(() => {
     if (isDemoUser) {
       const seen = localStorage.getItem('demo-guide-seen');
-      setHasSeenGuide(!!seen);
       
       // Auto-start guide for first-time demo users
       if (!seen) {
@@ -103,6 +101,12 @@ export const DemoGuide: React.FC = () => {
 
   const currentGuideStep = guideSteps[currentStep];
 
+  const handleClose = useCallback(() => {
+    setIsActive(false);
+    setIsVisible(false);
+    localStorage.setItem('demo-guide-seen', 'true');
+  }, []);
+
   const handleNext = useCallback(() => {
     if (currentStep < guideSteps.length - 1) {
       const nextStep = guideSteps[currentStep + 1];
@@ -113,7 +117,7 @@ export const DemoGuide: React.FC = () => {
     } else {
       handleClose();
     }
-  }, [currentStep, location.pathname, navigate]);
+  }, [currentStep, location.pathname, navigate, handleClose]);
 
   const handlePrev = useCallback(() => {
     if (currentStep > 0) {
@@ -124,13 +128,6 @@ export const DemoGuide: React.FC = () => {
       setCurrentStep(currentStep - 1);
     }
   }, [currentStep, location.pathname, navigate]);
-
-  const handleClose = useCallback(() => {
-    setIsActive(false);
-    setIsVisible(false);
-    localStorage.setItem('demo-guide-seen', 'true');
-    setHasSeenGuide(true);
-  }, []);
 
   const handleStepClick = useCallback((stepIndex: number) => {
     const step = guideSteps[stepIndex];

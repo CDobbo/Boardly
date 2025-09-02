@@ -86,11 +86,6 @@ export const ProjectBoard: React.FC = () => {
     }
   }, [selectedBoard, searchParams, setSearchParams]);
 
-  const handleTaskDialogClose = () => {
-    setTaskDialogOpen(false);
-    setSelectedTask(null);
-  };
-
   const handleTaskUpdate = () => {
     handleRefresh();
   };
@@ -231,7 +226,12 @@ export const ProjectBoard: React.FC = () => {
         <TaskEditDialog
           task={selectedTask}
           open={taskDialogOpen}
-          onOpenChange={setTaskDialogOpen}
+          onOpenChange={(open) => {
+            setTaskDialogOpen(open);
+            if (!open) {
+              setSelectedTask(null);
+            }
+          }}
           onUpdate={handleTaskUpdate}
         />
       )}

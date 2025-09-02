@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { X, Plus, AlertCircle, Link2, Users, Search } from 'lucide-react';
+import { X, AlertCircle, Link2, Users, Search } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -51,9 +51,14 @@ export const TaskDependencies: React.FC<TaskDependenciesProps> = ({ taskId, proj
 
   useEffect(() => {
     const loadData = async () => {
-      await loadDependencies();
-      if (projectId) {
-        await loadAvailableTasks();
+      // Only load dependencies if taskId is valid
+      if (Number.isInteger(Number(taskId)) && Number(taskId) > 0) {
+        await loadDependencies();
+        if (projectId) {
+          await loadAvailableTasks();
+        }
+      } else {
+        console.warn('Invalid taskId provided to TaskDependencies:', taskId);
       }
     };
     loadData();
@@ -95,9 +100,14 @@ export const TaskDependencies: React.FC<TaskDependenciesProps> = ({ taskId, proj
       setLoading(true);
       const response = await tasksAPI.getDependencies(String(taskId));
       setDependencies(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load dependencies:', error);
-      setError('Failed to load task dependencies');
+      // Handle 404 errors more gracefully - task might not exist or user doesn't have access
+      if (error.response?.status === 404) {
+        setError('Task not found or access denied');
+      } else {
+        setError('Failed to load task dependencies');
+      }
     } finally {
       setLoading(false);
     }

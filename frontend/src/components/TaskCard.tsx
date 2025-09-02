@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { TaskEditDialog } from './TaskEditDialog';
+import { ConfirmDialog } from './ConfirmDialog';
 import { useNavigate } from 'react-router-dom';
 
 interface Task {
@@ -67,6 +68,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const navigate = useNavigate();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dependencies, setDependencies] = useState<{
     blockedBy: any[];
     blocking: any[];
@@ -80,8 +83,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     try {
       const response = await tasksAPI.getDependencies(String(task.id));
       setDependencies(response.data);
-    } catch (error) {
-      console.error('Failed to load dependencies:', error);
+    } catch (error: any) {
+      // Silently handle 404 errors for missing tasks - this can happen with stale data
+      if (error.response?.status === 404) {
+        console.warn(`Task ${task.id} dependencies not found - task may not exist or access denied`);
+      } else {
+        console.error('Failed to load dependencies:', error);
+      }
     }
   };
 
@@ -114,6 +122,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       console.error('Failed to assign task:', error);
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    // Make sure edit dialog is closed before deleting
+    setEditDialogOpen(false);
+    if (onDelete) {
+      onDelete();
     }
   };
 
@@ -188,7 +204,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           </div>
           {(onDelete || onUpdate) && (
-            <DropdownMenu>
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
@@ -227,7 +243,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 )}
                 {onDelete && (
                   <DropdownMenuItem
-                    onClick={onDelete}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setDropdownOpen(false);
+                      setEditDialogOpen(false); // Ensure edit dialog stays closed
+                      setShowDeleteConfirm(true);
+                    }}
                     className="text-destructive"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
@@ -318,6 +340,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           onUpdate={onUpdate}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </>
   );
 };
