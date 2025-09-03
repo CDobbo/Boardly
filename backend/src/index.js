@@ -36,7 +36,8 @@ app.use(cors({
     'http://localhost:3009',
     'http://localhost:3010',
     'http://localhost:3011',
-    'https://your-netlify-site.netlify.app' // Replace with your Netlify domain
+    'https://boardly-552zeqlhs-cdobbos-projects.vercel.app',
+    /^https:\/\/boardly.*\.vercel\.app$/ // Allow any Vercel deployment URL
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
