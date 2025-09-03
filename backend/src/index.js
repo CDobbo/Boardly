@@ -29,20 +29,32 @@ const limiter = rateLimit({
 
 app.use(helmet());
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3005',
-    'http://localhost:3008',
-    'http://localhost:3009',
-    'http://localhost:3010',
-    'http://localhost:3011',
-    'https://boardly-552zeqlhs-cdobbos-projects.vercel.app',
-    'https://boardly-iota.vercel.app',
-    /^https:\/\/boardly.*\.vercel\.app$/ // Allow any Vercel deployment URL
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Allow all localhost origins
+    if (origin.includes('localhost')) return callback(null, true);
+    
+    // Allow all Vercel deployments
+    if (origin.includes('vercel.app')) return callback(null, true);
+    
+    // Allow specific origins
+    const allowedOrigins = [
+      'https://boardly-552zeqlhs-cdobbos-projects.vercel.app',
+      'https://boardly-iota.vercel.app'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 }));
 app.use(express.json());
 app.use('/api/', limiter);
