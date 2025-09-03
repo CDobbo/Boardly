@@ -1,6 +1,8 @@
 // AI-Powered Natural Language Parser
 // Uses OpenAI API or Claude API for more intelligent parsing
 
+import { NaturalLanguageParser } from './naturalLanguageParser';
+
 interface AIConfig {
   apiKey: string;
   model?: string;

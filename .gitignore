@@ -80,8 +80,6 @@ tmp/
 set-passwords.js
 migrate-users.js
 simple-migrate-users.js
-*firebase*.js
-*netlify*
 
 
 # Local development
