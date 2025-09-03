@@ -19,7 +19,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 dotenv.config();
 
 const app = express();
-const PORT = 5005;
+const PORT = process.env.PORT || 5005;
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
