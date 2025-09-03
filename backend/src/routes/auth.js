@@ -21,14 +21,14 @@ router.post('/register',
 
       const { email, password, name } = req.body;
 
-      const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+      const existingUser = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
       if (existingUser) {
         return res.status(409).json({ error: 'Email already registered' });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
       
-      const result = db.prepare(
+      const result = await db.prepare(
         'INSERT INTO users (email, password, name) VALUES (?, ?, ?)'
       ).run(email, hashedPassword, name);
 
@@ -57,7 +57,7 @@ router.post('/login',
       const { email, password } = req.body;
       // Login attempt for user authentication
 
-      const user = db.prepare('SELECT id, email, password, name, role FROM users WHERE email = ?').get(email);
+      const user = await db.prepare('SELECT id, email, password, name, role FROM users WHERE email = ?').get(email);
       if (!user) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
