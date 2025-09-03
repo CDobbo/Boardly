@@ -17,7 +17,13 @@
       "Bash(sqlite3:*)",
       "Bash(curl:*)",
       "Bash(npm start)",
-      "Bash(set PORT=3011)"
+      "Bash(set PORT=3011)",
+      "Read(C:\\Github/**)",
+      "Bash(chmod:*)",
+      "Bash(npm install:*)",
+      "Bash(npx husky init:*)",
+      "Bash(npm run lint)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": [],

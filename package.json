@@ -10,7 +10,8 @@
     "test:persistence": "playwright test persistence.spec.ts",
     "test:report": "playwright show-report",
     "start:backend": "cd backend && npm start",
-    "start:frontend": "cd frontend && npm start"
+    "start:frontend": "cd frontend && npm start",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.2"
