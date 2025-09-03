@@ -36,7 +36,7 @@ const requireAdmin = async (req, res, next) => {
   if (req.user && !req.user.role) {
     // Checking user role in database
     try {
-      const { db } = await import('../db/init.js');
+      const { db } = await import('../db/index.js');
       const user = db.prepare('SELECT role FROM users WHERE id = ?').get(req.user.id);
       console.log('Database user role:', user?.role);
       if (user) {

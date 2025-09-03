@@ -1,4 +1,4 @@
-import { db } from './init.js';
+import { db } from './index.js';
 
 // Migration to add diary_entry_id column to tasks table
 try {

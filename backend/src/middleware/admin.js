@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { db } from '../db/init.js';
+import { db } from '../db/index.js';
 
 export const requireAdmin = (req, res, next) => {
   try {
