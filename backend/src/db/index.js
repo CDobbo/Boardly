@@ -10,14 +10,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const { Pool } = pg;
 
 // Check if we should use PostgreSQL
-const usePostgreSQL = process.env.DATABASE_URL && (
-  process.env.NODE_ENV === 'production' || 
-  process.env.USE_POSTGRESQL === 'true'
-);
+// Always use PostgreSQL if DATABASE_URL is set, or in production
+const usePostgreSQL = !!(process.env.DATABASE_URL || process.env.NODE_ENV === 'production');
 
 class DatabaseWrapper {
   constructor() {
     if (usePostgreSQL) {
+      if (!process.env.DATABASE_URL) {
+        throw new Error('DATABASE_URL environment variable is required in production. Please set it to your PostgreSQL connection string.');
+      }
       console.log('Connecting to PostgreSQL database');
       this.type = 'postgresql';
       this.pool = new Pool({
