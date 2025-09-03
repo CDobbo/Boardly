@@ -40,9 +40,11 @@ class DatabaseWrapper {
     } else {
       console.log('Using SQLite database');
       this.type = 'sqlite';
-      const dbPath = process.env.NODE_ENV === 'production' 
-        ? '/var/data/database.sqlite'
-        : path.resolve(__dirname, '../../', process.env.DB_PATH || './database.sqlite');
+      // Don't create SQLite in production when we should be using PostgreSQL
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('Cannot use SQLite in production. DATABASE_URL must be set.');
+      }
+      const dbPath = path.resolve(__dirname, '../../', process.env.DB_PATH || './database.sqlite');
       this.sqliteDb = new Database(dbPath);
     }
   }
@@ -289,9 +291,11 @@ export async function initDatabase() {
 
     console.log('PostgreSQL database initialized successfully');
   } else {
-    // Use existing SQLite initialization
-    const { initDatabase: initSQLite } = await import('./init.js');
-    initSQLite();
+    // Use existing SQLite initialization - only import if needed
+    if (!usePostgreSQL) {
+      const { initDatabase: initSQLite } = await import('./init.js');
+      initSQLite();
+    }
   }
 }
 
