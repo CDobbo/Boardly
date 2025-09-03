@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { body, validationResult } from 'express-validator';
-import { db } from '../db/init.js';
+import { db } from '../db/index.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();

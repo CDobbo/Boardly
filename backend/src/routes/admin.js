@@ -2,7 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import path from 'path';
-import { db } from '../db/init.js';
+import { db } from '../db/index.js';
 import { requireAdmin } from '../middleware/admin.js';
 
 const router = express.Router();

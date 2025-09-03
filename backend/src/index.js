@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
-import { initDatabase } from './db/init.js';
+import { initDatabase } from './db/index.js';
 import authRoutes from './routes/auth.js';
 import projectRoutes from './routes/projects.js';
 import boardRoutes from './routes/boards.js';
