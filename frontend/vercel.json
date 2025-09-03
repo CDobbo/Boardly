@@ -6,6 +6,6 @@
     }
   ],
   "env": {
-    "REACT_APP_API_URL": "@boardly-api-url"
+    "REACT_APP_API_URL": "https://boardly-backend.onrender.com/api"
   }
 }
