@@ -8,7 +8,7 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Use a persistent volume path in production, local path in development
 const dbPath = process.env.NODE_ENV === 'production' 
-  ? '/app/database.sqlite'  // Railway persistent volume
+  ? '/var/data/database.sqlite'  // Render persistent disk
   : path.resolve(__dirname, '../../', process.env.DB_PATH || './database.sqlite');
 
 export const db = new Database(dbPath);
