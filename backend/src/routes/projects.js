@@ -7,9 +7,9 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
-router.get('/', (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const projects = db.prepare(`
+    const projects = await db.prepare(`
       SELECT p.*, pm.role, owner.name as owner_name, owner.email as owner_email
       FROM projects p
       JOIN project_members pm ON p.id = pm.project_id
@@ -24,9 +24,9 @@ router.get('/', (req, res, next) => {
   }
 });
 
-router.get('/:id', (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
   try {
-    const project = db.prepare(`
+    const project = await db.prepare(`
       SELECT p.*, pm.role 
       FROM projects p
       JOIN project_members pm ON p.id = pm.project_id
@@ -37,7 +37,7 @@ router.get('/:id', (req, res, next) => {
       return res.status(404).json({ error: 'Project not found' });
     }
 
-    const members = db.prepare(`
+    const members = await db.prepare(`
       SELECT u.id, u.email, u.name, pm.role, pm.joined_at
       FROM project_members pm
       JOIN users u ON pm.user_id = u.id
