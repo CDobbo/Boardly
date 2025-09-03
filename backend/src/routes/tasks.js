@@ -35,7 +35,7 @@ const checkTaskAccess = (req, res, next) => {
   next();
 };
 
-router.get('/search/global', (req, res, next) => {
+async router.get('/search/global', (req, res, next) => {
   try {
     const { q, status, priority, assigneeId } = req.query;
 
@@ -83,7 +83,7 @@ router.get('/search/global', (req, res, next) => {
   }
 });
 
-router.get('/search', (req, res, next) => {
+async router.get('/search', (req, res, next) => {
   try {
     const { q, projectId, status, priority, assigneeId } = req.query;
 
@@ -141,7 +141,7 @@ router.get('/search', (req, res, next) => {
   }
 });
 
-router.get('/my-tasks', (req, res, next) => {
+async router.get('/my-tasks', (req, res, next) => {
   try {
     const tasks = db.prepare(`
       SELECT t.*, p.name as project_name, c.name as column_name, b.name as board_name
@@ -168,7 +168,7 @@ router.get('/my-tasks', (req, res, next) => {
   }
 });
 
-router.get('/my-stats', (req, res, next) => {
+async router.get('/my-stats', (req, res, next) => {
   try {
     const totalTasks = db.prepare(`
       SELECT COUNT(*) as count
@@ -252,7 +252,7 @@ router.get('/my-stats', (req, res, next) => {
   }
 });
 
-router.get('/stats/:projectId', (req, res, next) => {
+async router.get('/stats/:projectId', (req, res, next) => {
   try {
     const hasAccess = db.prepare(`
       SELECT 1 FROM project_members 
@@ -322,7 +322,7 @@ router.get('/stats/:projectId', (req, res, next) => {
   }
 });
 
-router.post('/',
+async router.post('/',
   [
     body('title').trim().notEmpty(),
     body('description').optional().trim(),
@@ -399,7 +399,7 @@ router.post('/',
   }
 );
 
-router.put('/:id',
+async router.put('/:id',
   [
     body('title').optional().trim().notEmpty(),
     body('description').optional().trim(),
@@ -493,7 +493,7 @@ router.put('/:id',
   }
 );
 
-router.put('/:id/move',
+async router.put('/:id/move',
   [
     body('columnId').isInt(),
     body('position').optional().isInt()
@@ -585,7 +585,7 @@ router.put('/:id/move',
   }
 );
 
-router.delete('/:id', checkTaskAccess, (req, res, next) => {
+async router.delete('/:id', checkTaskAccess, (req, res, next) => {
   try {
     db.prepare('DELETE FROM tasks WHERE id = ?').run(req.params.id);
     res.status(204).send();
@@ -595,7 +595,7 @@ router.delete('/:id', checkTaskAccess, (req, res, next) => {
 });
 
 // Task relationships endpoints
-router.get('/:id/dependencies', checkTaskAccess, (req, res, next) => {
+async router.get('/:id/dependencies', checkTaskAccess, (req, res, next) => {
   try {
     // Get tasks that this task depends on (blockers)
     const blockedBy = db.prepare(`
@@ -623,7 +623,7 @@ router.get('/:id/dependencies', checkTaskAccess, (req, res, next) => {
   }
 });
 
-router.post('/:id/dependencies', 
+async router.post('/:id/dependencies', 
   [
     body('dependsOnTaskId').isInt().toInt()
   ],
@@ -691,7 +691,7 @@ router.post('/:id/dependencies',
   }
 );
 
-router.delete('/:id/dependencies/:dependencyId', checkTaskAccess, (req, res, next) => {
+async router.delete('/:id/dependencies/:dependencyId', checkTaskAccess, (req, res, next) => {
   try {
     const result = db.prepare(`
       DELETE FROM task_dependencies 

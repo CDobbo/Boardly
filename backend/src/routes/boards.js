@@ -22,7 +22,7 @@ const checkProjectAccess = (req, res, next) => {
   next();
 };
 
-router.get('/project/:projectId', checkProjectAccess, (req, res, next) => {
+async router.get('/project/:projectId', checkProjectAccess, (req, res, next) => {
   try {
     const boards = db.prepare(`
       SELECT b.*, 
@@ -67,7 +67,7 @@ router.get('/project/:projectId', checkProjectAccess, (req, res, next) => {
   }
 });
 
-router.get('/:id', (req, res, next) => {
+async router.get('/:id', (req, res, next) => {
   try {
     const board = db.prepare(`
       SELECT b.*, p.name as project_name 
@@ -113,7 +113,7 @@ router.get('/:id', (req, res, next) => {
   }
 });
 
-router.post('/',
+async router.post('/',
   [
     body('name').trim().notEmpty(),
     body('projectId').isInt()
@@ -146,7 +146,7 @@ router.post('/',
   }
 );
 
-router.post('/:boardId/columns',
+async router.post('/:boardId/columns',
   [body('name').trim().notEmpty()],
   (req, res, next) => {
     try {
@@ -191,7 +191,7 @@ router.post('/:boardId/columns',
   }
 );
 
-router.put('/columns/:columnId',
+async router.put('/columns/:columnId',
   [body('name').optional().trim().notEmpty()],
   (req, res, next) => {
     try {
@@ -230,7 +230,7 @@ router.put('/columns/:columnId',
   }
 );
 
-router.delete('/columns/:columnId', (req, res, next) => {
+async router.delete('/columns/:columnId', (req, res, next) => {
   try {
     const column = db.prepare(`
       SELECT c.*, b.project_id 

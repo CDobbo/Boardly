@@ -37,6 +37,7 @@ app.use(cors({
     'http://localhost:3010',
     'http://localhost:3011',
     'https://boardly-552zeqlhs-cdobbos-projects.vercel.app',
+    'https://boardly-iota.vercel.app',
     /^https:\/\/boardly.*\.vercel\.app$/ // Allow any Vercel deployment URL
   ],
   credentials: true,

@@ -24,7 +24,7 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.get('/:id', async (req, res, next) => {
+async router.get('/:id', async (req, res, next) => {
   try {
     const project = await db.prepare(`
       SELECT p.*, pm.role 
@@ -50,7 +50,7 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-router.post('/',
+async router.post('/',
   [
     body('name').trim().notEmpty(),
     body('description').optional().trim()
@@ -105,7 +105,7 @@ router.post('/',
   }
 );
 
-router.put('/:id',
+async router.put('/:id',
   [
     body('name').optional().trim().notEmpty(),
     body('description').optional().trim()
@@ -165,7 +165,7 @@ router.put('/:id',
   }
 );
 
-router.delete('/:id', (req, res, next) => {
+async router.delete('/:id', (req, res, next) => {
   try {
     const isOwner = db.prepare(`
       SELECT role FROM project_members 
@@ -183,7 +183,7 @@ router.delete('/:id', (req, res, next) => {
   }
 });
 
-router.get('/:id/members', (req, res, next) => {
+async router.get('/:id/members', (req, res, next) => {
   try {
     const hasAccess = db.prepare(`
       SELECT 1 FROM project_members 
@@ -208,7 +208,7 @@ router.get('/:id/members', (req, res, next) => {
   }
 });
 
-router.post('/:id/members',
+async router.post('/:id/members',
   [body('email').isEmail().normalizeEmail()],
   (req, res, next) => {
     try {
