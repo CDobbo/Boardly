@@ -39,8 +39,8 @@ interface Board {
     id: number;
     name: string;
     position: number;
+    tasks: Task[];
   }>;
-  tasks: Task[];
 }
 
 export const ProjectBoard: React.FC = () => {
@@ -64,8 +64,14 @@ export const ProjectBoard: React.FC = () => {
 
   const handleTaskClick = useCallback(async (taskId: number) => {
     try {
-      // Find task in current board data
-      let task = selectedBoard?.tasks.find(t => t.id === taskId);
+      // Find task in current board data (now nested in columns)
+      let task: Task | undefined;
+      if (selectedBoard) {
+        for (const column of selectedBoard.columns) {
+          task = column.tasks.find(t => t.id === taskId);
+          if (task) break;
+        }
+      }
       
       if (!task) {
         // If not found in current board, fetch from API
