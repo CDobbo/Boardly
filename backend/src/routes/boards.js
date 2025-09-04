@@ -44,8 +44,8 @@ router.get('/project/:projectId', checkProjectAccess, async (req, res, next) => 
         ORDER BY c.position
       `).all(board.id);
 
-      // Get all tasks for this board
-      const tasks = await db.prepare(`
+      // Get all tasks for this board and nest them within their columns
+      const allTasks = await db.prepare(`
         SELECT t.*, t.column_id as columnId, u.name as assignee_name, u.email as assignee_email,
           de.title as diary_entry_title, de.date as diary_entry_date
         FROM tasks t
@@ -56,7 +56,13 @@ router.get('/project/:projectId', checkProjectAccess, async (req, res, next) => 
         ORDER BY t.position
       `).all(board.id);
 
-      const result = { ...board, columns, tasks };
+      // Nest tasks within their respective columns
+      const columnsWithTasks = columns.map(column => ({
+        ...column,
+        tasks: allTasks.filter(task => task.column_id === column.id)
+      }));
+
+      const result = { ...board, columns: columnsWithTasks };
       boardsWithColumnsAndTasks.push(result);
     }
 
