@@ -51,8 +51,8 @@ interface Board {
     id: number;
     name: string;
     position: number;
+    tasks: Task[];
   }>;
-  tasks: Task[];
 }
 
 interface KanbanBoardProps {
@@ -88,16 +88,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onRefresh }) =>
 
   const loadBoard = useCallback(async () => {
     try {
-      // Use the board data passed as props
+      // Use the board data passed as props with tasks now nested in columns
       const columnsWithTasks = (board.columns || []).map(column => ({
         ...column,
         board_id: board.id,
-        tasks: (board.tasks || [])
-          .filter(task => task.columnId === column.id)
-          .map(task => ({
-            ...task,
-            projectId: parseInt(board.project_id) || undefined
-          }))
+        // Tasks are now directly in column.tasks from the API
+        tasks: (column.tasks || []).map(task => ({
+          ...task,
+          projectId: parseInt(board.project_id) || undefined
+        }))
       }));
       
       setColumns(columnsWithTasks);
