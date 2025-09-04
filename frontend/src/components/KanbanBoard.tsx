@@ -19,8 +19,10 @@ import { Plus } from 'lucide-react';
 import { boardsAPI, tasksAPI } from '../lib/api';
 import { TaskCard } from './TaskCard';
 import { KanbanColumn } from './KanbanColumn';
+import { MobileKanbanBoard } from './MobileKanbanBoard';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface Task {
   id: number;
@@ -61,11 +63,17 @@ interface KanbanBoardProps {
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onRefresh }) => {
+  const isMobile = useIsMobile(768);
   const [columns, setColumns] = useState<Column[]>([]);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [addingColumn, setAddingColumn] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
+
+  // If mobile, render mobile-specific component
+  if (isMobile) {
+    return <MobileKanbanBoard board={board} onRefresh={onRefresh} />;
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

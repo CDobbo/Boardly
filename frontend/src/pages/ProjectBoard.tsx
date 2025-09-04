@@ -7,6 +7,7 @@ import { KanbanBoard } from '../components/KanbanBoard';
 import { TaskEditDialog } from '../components/TaskEditDialog';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface Project {
   id: number;
@@ -44,6 +45,7 @@ interface Board {
 }
 
 export const ProjectBoard: React.FC = () => {
+  const isMobile = useIsMobile(768);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -162,10 +164,10 @@ export const ProjectBoard: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white border-b px-4 md:px-6 py-4"
+        className={`bg-white border-b ${isMobile ? 'px-3 py-3' : 'px-4 md:px-6 py-4'}`}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
@@ -173,39 +175,40 @@ export const ProjectBoard: React.FC = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
-              {project.description && (
+            <div className="min-w-0 flex-1">
+              <h1 className={`font-bold text-gray-900 truncate ${isMobile ? 'text-lg' : 'text-2xl'}`}>
+                {project.name}
+              </h1>
+              {project.description && !isMobile && (
                 <p className="text-sm text-gray-600 mt-1">{project.description}</p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-64"
-              />
-            </div>
-            <Button variant="outline" size="icon" className="md:hidden">
-              <Search className="h-4 w-4" />
-            </Button>
-            {project.role === 'owner' && (
-              <div className="hidden md:flex gap-2">
-                <Button variant="outline" size="icon">
-                  <Users className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon">
-                  <Settings className="h-4 w-4" />
-                </Button>
+          {!isMobile && (
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search tasks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 w-64"
+                />
               </div>
-            )}
-          </div>
+              {project.role === 'owner' && (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="icon">
+                    <Users className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {boards.length > 1 && (
@@ -227,7 +230,7 @@ export const ProjectBoard: React.FC = () => {
         )}
       </motion.div>
 
-      <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 md:p-6">
+      <div className={`flex-1 ${isMobile ? 'overflow-hidden' : 'overflow-x-auto overflow-y-hidden p-4 md:p-6'}`}>
         <KanbanBoard board={selectedBoard} onRefresh={handleRefresh} />
       </div>
 
