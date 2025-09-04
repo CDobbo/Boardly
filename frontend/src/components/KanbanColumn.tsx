@@ -122,7 +122,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
-      className={`bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 min-w-[300px] max-w-[300px] group flex flex-col h-full shadow-sm ${
+      className={`bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 md:p-4 min-w-[280px] w-[280px] md:min-w-[300px] md:w-[300px] group flex flex-col h-full shadow-sm ${
         isOver ? 'ring-2 ring-blue-500 ring-offset-2 bg-blue-50 dark:bg-blue-900/20' : ''
       }`}
     >

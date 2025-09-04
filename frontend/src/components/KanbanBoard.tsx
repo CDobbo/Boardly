@@ -80,8 +80,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onRefresh }) =>
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 250,
-        tolerance: 5,
+        delay: 200,
+        tolerance: 8,
       },
     })
   );
@@ -262,7 +262,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onRefresh }) =>
         onDragEnd={handleDragEnd}
       >
         <div className="flex-1 overflow-x-auto overflow-y-hidden min-h-0">
-          <div className="kanban-board flex gap-6 pb-6 px-6 min-w-max h-full">
+          <div className="kanban-board flex gap-4 md:gap-6 pb-6 px-4 md:px-6 min-w-max h-full">
             {columns.map((column) => (
               <KanbanColumn
                 key={column.id}

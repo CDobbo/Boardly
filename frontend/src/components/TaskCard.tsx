@@ -167,7 +167,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         }}
         whileTap={{ scale: 0.98 }}
         className={cn(
-          "bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow min-h-[120px] flex flex-col relative",
+          "bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg p-3 md:p-4 shadow-sm hover:shadow-md transition-shadow min-h-[110px] md:min-h-[120px] flex flex-col relative touch-manipulation",
           isSortableDragging && "opacity-50 cursor-grabbing",
           !isSortableDragging && "cursor-grab",
           isDragging && "shadow-lg",
