@@ -18,6 +18,7 @@ import {
 import { TaskEditDialog } from './TaskEditDialog';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface Task {
   id: number;
@@ -66,6 +67,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile(1024);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -167,7 +169,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         }}
         whileTap={{ scale: 0.98 }}
         className={cn(
-          "bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg p-3 md:p-4 shadow-sm hover:shadow-md transition-shadow min-h-[110px] md:min-h-[120px] flex flex-col relative touch-manipulation",
+          `bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col relative touch-manipulation ${isMobile ? 'p-2 min-h-[80px]' : 'p-3 md:p-4 min-h-[110px] md:min-h-[120px]'}`,
           isSortableDragging && "opacity-50 cursor-grabbing",
           !isSortableDragging && "cursor-grab",
           isDragging && "shadow-lg",

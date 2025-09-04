@@ -63,7 +63,7 @@ interface KanbanBoardProps {
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onRefresh }) => {
-  const isMobile = useIsMobile(768);
+  const isMobile = useIsMobile(1024);
   const [columns, setColumns] = useState<Column[]>([]);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);

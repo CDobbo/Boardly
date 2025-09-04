@@ -94,7 +94,7 @@ export const MobileKanbanBoard: React.FC<MobileKanbanBoardProps> = ({ board, onR
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Column Navigation Header */}
-      <div className="bg-white border-b px-4 py-3 flex-shrink-0">
+      <div className="bg-white border-b px-2 py-2 flex-shrink-0">
         <div className="flex items-center justify-between mb-2">
           <Button variant="ghost" size="icon" onClick={handlePreviousColumn}>
             <ChevronLeft className="h-5 w-5" />
@@ -131,8 +131,8 @@ export const MobileKanbanBoard: React.FC<MobileKanbanBoardProps> = ({ board, onR
       </div>
 
       {/* Tasks List */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
-        <div className="space-y-3">
+      <div className="flex-1 overflow-y-auto px-2 py-3">
+        <div className="space-y-2">
           {activeColumn.tasks.map((task) => (
             <motion.div
               key={task.id}
@@ -164,7 +164,7 @@ export const MobileKanbanBoard: React.FC<MobileKanbanBoardProps> = ({ board, onR
 
       {/* Add Task Button */}
       {activeColumn.tasks.length > 0 && (
-        <div className="flex-shrink-0 p-4 bg-white border-t">
+        <div className="flex-shrink-0 p-2 bg-white border-t">
           <Button 
             onClick={() => setCreateDialogOpen(true)}
             className="w-full"
