@@ -28,7 +28,8 @@
       "Bash(git push:*)",
       "Bash(git remote set-url:*)",
       "Bash(npx vercel:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": [],
