@@ -21,6 +21,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5005;
 
+// Trust proxy headers (required for Render and other hosting services)
+app.set('trust proxy', true);
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10000, // Increased to 10000 requests per window for testing

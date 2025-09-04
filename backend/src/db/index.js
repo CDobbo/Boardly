@@ -58,8 +58,24 @@ class DatabaseWrapper {
     // For PostgreSQL, convert placeholders and return an object with sync-looking methods
     // that actually perform async operations (this is a compatibility hack)
     let pgQuery = query;
+    
+    // Convert SQLite datetime functions to PostgreSQL equivalents
+    pgQuery = pgQuery.replace(/datetime\('now'\)/gi, 'CURRENT_TIMESTAMP');
+    pgQuery = pgQuery.replace(/datetime\('now',\s*'([^']+)'\)/gi, (match, modifier) => {
+      // Convert SQLite datetime modifiers to PostgreSQL
+      if (modifier.includes('+')) {
+        return `(CURRENT_TIMESTAMP + INTERVAL '${modifier.replace('+', '')}')`; 
+      } else if (modifier.includes('-')) {
+        return `(CURRENT_TIMESTAMP - INTERVAL '${modifier.replace('-', '')}')`; 
+      }
+      return 'CURRENT_TIMESTAMP';
+    });
+    pgQuery = pgQuery.replace(/date\('now'\)/gi, 'CURRENT_DATE');
+    pgQuery = pgQuery.replace(/CURRENT_TIMESTAMP/g, 'CURRENT_TIMESTAMP');
+    
+    // Convert ? placeholders to $1, $2, etc.
     let paramIndex = 1;
-    pgQuery = query.replace(/\?/g, () => `$${paramIndex++}`);
+    pgQuery = pgQuery.replace(/\?/g, () => `$${paramIndex++}`);
     
     return {
       get: (...params) => {
