@@ -34,7 +34,8 @@ router.get('/project/:projectId', checkProjectAccess, async (req, res, next) => 
       ORDER BY b.position, b.created_at
     `).all(req.params.projectId);
 
-    const boardsWithColumnsAndTasks = boards.map(board => {
+    const boardsWithColumnsAndTasks = [];
+    for (const board of boards) {
       const columns = await db.prepare(`
         SELECT c.*,
           (SELECT COUNT(*) FROM tasks WHERE column_id = c.id) as task_count
@@ -56,8 +57,8 @@ router.get('/project/:projectId', checkProjectAccess, async (req, res, next) => 
       `).all(board.id);
 
       const result = { ...board, columns, tasks };
-      return result;
-    });
+      boardsWithColumnsAndTasks.push(result);
+    }
 
     // Return the first board if exists (since frontend expects single board)
     const response = boardsWithColumnsAndTasks.length > 0 ? boardsWithColumnsAndTasks[0] : null;
@@ -95,7 +96,8 @@ router.get('/:id', async (req, res, next) => {
       ORDER BY position
     `).all(req.params.id);
 
-    const columnsWithTasks = columns.map(column => {
+    const columnsWithTasks = [];
+    for (const column of columns) {
       const tasks = await db.prepare(`
         SELECT t.*, u.name as assignee_name, u.email as assignee_email
         FROM tasks t
@@ -104,8 +106,8 @@ router.get('/:id', async (req, res, next) => {
         ORDER BY t.position
       `).all(column.id);
 
-      return { ...column, tasks };
-    });
+      columnsWithTasks.push({ ...column, tasks });
+    }
 
     res.json({ ...board, columns: columnsWithTasks });
   } catch (error) {

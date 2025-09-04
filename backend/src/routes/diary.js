@@ -47,7 +47,8 @@ router.get('/',
       const entries = await db.prepare(sql).all(...params);
       
       // Add linked tasks to each diary entry
-      const entriesWithTasks = entries.map(entry => {
+      const entriesWithTasks = [];
+      for (const entry of entries) {
         const linkedTasks = await db.prepare(`
           SELECT t.id, t.title, t.priority, c.name as column_name, p.name as project_name
           FROM tasks t
@@ -57,8 +58,8 @@ router.get('/',
           WHERE t.diary_entry_id = ?
         `).all(entry.id);
         
-        return { ...entry, linkedTasks };
-      });
+        entriesWithTasks.push({ ...entry, linkedTasks });
+      }
       
       // Debug log for entry 611
       const entry611 = entriesWithTasks.find(e => e.id === 611);

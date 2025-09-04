@@ -84,11 +84,11 @@ router.post('/',
 
         const boardId = boardResult.lastInsertRowid;
 
-        defaultColumns.forEach((columnName, index) => {
+        for (let index = 0; index < defaultColumns.length; index++) {
           await db.prepare(
             'INSERT INTO columns (name, board_id, position) VALUES (?, ?, ?)'
-          ).run(columnName, boardId, index);
-        });
+          ).run(defaultColumns[index], boardId, index);
+        }
 
         await db.exec('COMMIT');
 
