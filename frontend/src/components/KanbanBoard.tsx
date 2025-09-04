@@ -70,11 +70,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onRefresh }) =>
   const [addingColumn, setAddingColumn] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
 
-  // If mobile, render mobile-specific component
-  if (isMobile) {
-    return <MobileKanbanBoard board={board} onRefresh={onRefresh} />;
-  }
-
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -251,6 +246,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onRefresh }) =>
       console.error('Failed to delete task:', error);
     }
   };
+
+  // If mobile, render mobile-specific component
+  if (isMobile) {
+    return <MobileKanbanBoard board={board} onRefresh={onRefresh} />;
+  }
 
   if (loading) {
     return (
