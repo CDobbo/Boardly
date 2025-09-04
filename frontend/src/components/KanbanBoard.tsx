@@ -203,8 +203,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ board, onRefresh }) =>
 
     try {
       await tasksAPI.move(String(taskId), newColumnId, newPosition);
+      // Refresh data after successful move to ensure consistency
+      handleTaskUpdate();
     } catch (error) {
       console.error('Failed to move task:', error);
+      // Refresh data after failed move to revert optimistic update
       handleTaskUpdate();
     }
 
