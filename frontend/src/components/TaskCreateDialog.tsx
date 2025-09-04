@@ -74,9 +74,12 @@ export const TaskCreateDialog: React.FC<TaskCreateDialogProps> = ({
     setLoadingUsers(true);
     try {
       const response = await authAPI.getAllUsers();
-      setUsers(response.data);
+      // Ensure we always set an array
+      const usersData = Array.isArray(response.data) ? response.data : Array.isArray(response) ? response : [];
+      setUsers(usersData);
     } catch (error) {
       console.error('Failed to load users:', error);
+      setUsers([]); // Set empty array on error
     } finally {
       setLoadingUsers(false);
     }
@@ -159,7 +162,7 @@ export const TaskCreateDialog: React.FC<TaskCreateDialogProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
-                {(users || []).map((user) => (
+                {Array.isArray(users) && users.map((user) => (
                   <SelectItem key={user.id} value={String(user.id)}>
                     {user.name}
                   </SelectItem>
