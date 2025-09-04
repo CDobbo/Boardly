@@ -159,7 +159,7 @@ export const TaskCreateDialog: React.FC<TaskCreateDialogProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="unassigned">Unassigned</SelectItem>
-                {users.map((user) => (
+                {(users || []).map((user) => (
                   <SelectItem key={user.id} value={String(user.id)}>
                     {user.name}
                   </SelectItem>
