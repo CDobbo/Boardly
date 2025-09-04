@@ -8,11 +8,11 @@ import { requireAdmin } from '../middleware/admin.js';
 const router = express.Router();
 
 // Get all users
-router.get('/users', requireAdmin, (req, res, next) => {
+router.get('/users', requireAdmin, async (req, res, next) => {
   try {
     // Admin retrieving user list
     
-    const users = db.prepare(`
+    const users = await db.prepare(`
       SELECT id, email, name, role, created_at, updated_at
       FROM users 
       ORDER BY created_at DESC
@@ -41,14 +41,14 @@ router.post('/users', requireAdmin, async (req, res, next) => {
     }
 
     // Check if user already exists
-    const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    const existingUser = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existingUser) {
       return res.status(400).json({ error: 'User with this email already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    const insertUser = db.prepare(`
+    const insertUser = await db.prepare(`
       INSERT INTO users (email, name, password, role)
       VALUES (?, ?, ?, ?)
     `);
@@ -81,14 +81,14 @@ router.put('/users/:id', requireAdmin, async (req, res, next) => {
     }
 
     // Check if user exists
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    const user = await db.prepare('SELECT * FROM users WHERE id = ?').get(id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     // Prevent removing admin role from the last admin
     if (user.role === 'admin' && role === 'user') {
-      const adminCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE role = ?').get('admin');
+      const adminCount = await db.prepare('SELECT COUNT(*) as count FROM users WHERE role = ?').get('admin');
       if (adminCount.count <= 1) {
         return res.status(400).json({ error: 'Cannot remove admin role from the last admin user' });
       }
@@ -103,9 +103,9 @@ router.put('/users/:id', requireAdmin, async (req, res, next) => {
       params = [email, name, role || user.role, hashedPassword, id];
     }
 
-    db.prepare(updateQuery).run(...params);
+    await db.prepare(updateQuery).run(...params);
 
-    const updatedUser = db.prepare(`
+    const updatedUser = await db.prepare(`
       SELECT id, email, name, role, created_at, updated_at
       FROM users WHERE id = ?
     `).get(id);
@@ -117,19 +117,19 @@ router.put('/users/:id', requireAdmin, async (req, res, next) => {
 });
 
 // Delete user
-router.delete('/users/:id', requireAdmin, (req, res, next) => {
+router.delete('/users/:id', requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     
     // Check if user exists
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    const user = await db.prepare('SELECT * FROM users WHERE id = ?').get(id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     // Prevent deleting the last admin
     if (user.role === 'admin') {
-      const adminCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE role = ?').get('admin');
+      const adminCount = await db.prepare('SELECT COUNT(*) as count FROM users WHERE role = ?').get('admin');
       if (adminCount.count <= 1) {
         return res.status(400).json({ error: 'Cannot delete the last admin user' });
       }
@@ -140,7 +140,7 @@ router.delete('/users/:id', requireAdmin, (req, res, next) => {
       return res.status(400).json({ error: 'Cannot delete your own account' });
     }
 
-    db.prepare('DELETE FROM users WHERE id = ?').run(id);
+    await db.prepare('DELETE FROM users WHERE id = ?').run(id);
     
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
@@ -149,13 +149,13 @@ router.delete('/users/:id', requireAdmin, (req, res, next) => {
 });
 
 // Get system statistics
-router.get('/stats', requireAdmin, (req, res, next) => {
+router.get('/stats', requireAdmin, async (req, res, next) => {
   try {
     const stats = {
-      users: db.prepare('SELECT COUNT(*) as count FROM users').get().count,
-      admins: db.prepare('SELECT COUNT(*) as count FROM users WHERE role = ?').get('admin').count,
-      projects: db.prepare('SELECT COUNT(*) as count FROM projects').get().count,
-      tasks: db.prepare('SELECT COUNT(*) as count FROM tasks').get().count,
+      users: await db.prepare('SELECT COUNT(*) as count FROM users').get().count,
+      admins: await db.prepare('SELECT COUNT(*) as count FROM users WHERE role = ?').get('admin').count,
+      projects: await db.prepare('SELECT COUNT(*) as count FROM projects').get().count,
+      tasks: await db.prepare('SELECT COUNT(*) as count FROM tasks').get().count,
     };
     res.json(stats);
   } catch (error) {
@@ -164,10 +164,10 @@ router.get('/stats', requireAdmin, (req, res, next) => {
 });
 
 // Cleanup test users (admin only)
-router.delete('/cleanup-test-users', requireAdmin, (req, res, next) => {
+router.delete('/cleanup-test-users', requireAdmin, async (req, res, next) => {
   try {
     // Delete users with test email pattern
-    const result = db.prepare(`
+    const result = await db.prepare(`
       DELETE FROM users 
       WHERE email LIKE 'test%@example.com'
     `).run();
@@ -183,7 +183,7 @@ router.delete('/cleanup-test-users', requireAdmin, (req, res, next) => {
 });
 
 // Create database backup
-router.post('/backup', requireAdmin, (req, res, next) => {
+router.post('/backup', requireAdmin, async (req, res, next) => {
   try {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupDir = path.join(process.cwd(), 'backups');
@@ -222,7 +222,7 @@ router.post('/backup', requireAdmin, (req, res, next) => {
 });
 
 // List database backups
-router.get('/backups', requireAdmin, (req, res, next) => {
+router.get('/backups', requireAdmin, async (req, res, next) => {
   try {
     const backupDir = path.join(process.cwd(), 'backups');
     

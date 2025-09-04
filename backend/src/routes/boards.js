@@ -7,10 +7,10 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
-const checkProjectAccess = (req, res, next) => {
+const checkProjectAccess = async (req, res, next) => {
   const projectId = req.params.projectId || req.body.projectId;
   
-  const hasAccess = db.prepare(`
+  const hasAccess = await db.prepare(`
     SELECT 1 FROM project_members 
     WHERE project_id = ? AND user_id = ?
   `).get(projectId, req.user.id);
@@ -22,9 +22,9 @@ const checkProjectAccess = (req, res, next) => {
   next();
 };
 
-router.get('/project/:projectId', checkProjectAccess, (req, res, next) => {
+router.get('/project/:projectId', checkProjectAccess, async (req, res, next) => {
   try {
-    const boards = db.prepare(`
+    const boards = await db.prepare(`
       SELECT b.*, 
         (SELECT COUNT(*) FROM columns c 
          JOIN tasks t ON c.id = t.column_id 
@@ -35,7 +35,7 @@ router.get('/project/:projectId', checkProjectAccess, (req, res, next) => {
     `).all(req.params.projectId);
 
     const boardsWithColumnsAndTasks = boards.map(board => {
-      const columns = db.prepare(`
+      const columns = await db.prepare(`
         SELECT c.*,
           (SELECT COUNT(*) FROM tasks WHERE column_id = c.id) as task_count
         FROM columns c
@@ -44,7 +44,7 @@ router.get('/project/:projectId', checkProjectAccess, (req, res, next) => {
       `).all(board.id);
 
       // Get all tasks for this board
-      const tasks = db.prepare(`
+      const tasks = await db.prepare(`
         SELECT t.*, t.column_id as columnId, u.name as assignee_name, u.email as assignee_email,
           de.title as diary_entry_title, de.date as diary_entry_date
         FROM tasks t
@@ -67,9 +67,9 @@ router.get('/project/:projectId', checkProjectAccess, (req, res, next) => {
   }
 });
 
-router.get('/:id', (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
   try {
-    const board = db.prepare(`
+    const board = await db.prepare(`
       SELECT b.*, p.name as project_name 
       FROM boards b
       JOIN projects p ON b.project_id = p.id
@@ -80,7 +80,7 @@ router.get('/:id', (req, res, next) => {
       return res.status(404).json({ error: 'Board not found' });
     }
 
-    const hasAccess = db.prepare(`
+    const hasAccess = await db.prepare(`
       SELECT 1 FROM project_members 
       WHERE project_id = ? AND user_id = ?
     `).get(board.project_id, req.user.id);
@@ -89,14 +89,14 @@ router.get('/:id', (req, res, next) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const columns = db.prepare(`
+    const columns = await db.prepare(`
       SELECT * FROM columns 
       WHERE board_id = ? 
       ORDER BY position
     `).all(req.params.id);
 
     const columnsWithTasks = columns.map(column => {
-      const tasks = db.prepare(`
+      const tasks = await db.prepare(`
         SELECT t.*, u.name as assignee_name, u.email as assignee_email
         FROM tasks t
         LEFT JOIN users u ON t.assignee_id = u.id
@@ -118,8 +118,7 @@ router.post('/',
     body('name').trim().notEmpty(),
     body('projectId').isInt()
   ],
-  checkProjectAccess,
-  (req, res, next) => {
+  checkProjectAccess, async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -128,17 +127,17 @@ router.post('/',
 
       const { name, projectId } = req.body;
 
-      const maxPosition = db.prepare(
+      const maxPosition = await db.prepare(
         'SELECT MAX(position) as max FROM boards WHERE project_id = ?'
       ).get(projectId);
 
       const position = (maxPosition.max || 0) + 1;
 
-      const result = db.prepare(
+      const result = await db.prepare(
         'INSERT INTO boards (name, project_id, position) VALUES (?, ?, ?)'
       ).run(name, projectId, position);
 
-      const board = db.prepare('SELECT * FROM boards WHERE id = ?').get(result.lastInsertRowid);
+      const board = await db.prepare('SELECT * FROM boards WHERE id = ?').get(result.lastInsertRowid);
       res.status(201).json(board);
     } catch (error) {
       next(error);
@@ -147,15 +146,14 @@ router.post('/',
 );
 
 router.post('/:boardId/columns',
-  [body('name').trim().notEmpty()],
-  (req, res, next) => {
+  [body('name').trim().notEmpty()], async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const board = db.prepare('SELECT project_id FROM boards WHERE id = ?')
+      const board = await db.prepare('SELECT project_id FROM boards WHERE id = ?')
         .get(req.params.boardId);
 
       if (!board) {
@@ -171,17 +169,17 @@ router.post('/:boardId/columns',
         return res.status(403).json({ error: 'Access denied' });
       }
 
-      const maxPosition = db.prepare(
+      const maxPosition = await db.prepare(
         'SELECT MAX(position) as max FROM columns WHERE board_id = ?'
       ).get(req.params.boardId);
 
       const position = (maxPosition.max || 0) + 1;
 
-      const result = db.prepare(
+      const result = await db.prepare(
         'INSERT INTO columns (name, board_id, position) VALUES (?, ?, ?)'
       ).run(req.body.name, req.params.boardId, position);
 
-      const column = db.prepare('SELECT * FROM columns WHERE id = ?')
+      const column = await db.prepare('SELECT * FROM columns WHERE id = ?')
         .get(result.lastInsertRowid);
 
       res.status(201).json(column);
@@ -192,8 +190,7 @@ router.post('/:boardId/columns',
 );
 
 router.put('/columns/:columnId',
-  [body('name').optional().trim().notEmpty()],
-  (req, res, next) => {
+  [body('name').optional().trim().notEmpty()], async (req, res, next) => {
     try {
       const column = db.prepare(`
         SELECT c.*, b.project_id 
@@ -206,7 +203,7 @@ router.put('/columns/:columnId',
         return res.status(404).json({ error: 'Column not found' });
       }
 
-      const hasAccess = db.prepare(`
+      const hasAccess = await db.prepare(`
         SELECT role FROM project_members 
         WHERE project_id = ? AND user_id = ?
       `).get(column.project_id, req.user.id);
@@ -216,7 +213,7 @@ router.put('/columns/:columnId',
       }
 
       if (req.body.name) {
-        db.prepare('UPDATE columns SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+        await db.prepare('UPDATE columns SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
           .run(req.body.name, req.params.columnId);
       }
 
@@ -230,7 +227,7 @@ router.put('/columns/:columnId',
   }
 );
 
-router.delete('/columns/:columnId', (req, res, next) => {
+router.delete('/columns/:columnId', async (req, res, next) => {
   try {
     const column = db.prepare(`
       SELECT c.*, b.project_id 
@@ -243,7 +240,7 @@ router.delete('/columns/:columnId', (req, res, next) => {
       return res.status(404).json({ error: 'Column not found' });
     }
 
-    const hasAccess = db.prepare(`
+    const hasAccess = await db.prepare(`
       SELECT role FROM project_members 
       WHERE project_id = ? AND user_id = ? AND role IN ('owner', 'admin')
     `).get(column.project_id, req.user.id);
@@ -252,7 +249,7 @@ router.delete('/columns/:columnId', (req, res, next) => {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
-    db.prepare('DELETE FROM columns WHERE id = ?').run(req.params.columnId);
+    await db.prepare('DELETE FROM columns WHERE id = ?').run(req.params.columnId);
     res.status(204).send();
   } catch (error) {
     next(error);

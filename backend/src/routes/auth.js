@@ -77,9 +77,9 @@ router.post('/login',
   }
 );
 
-router.get('/me', authenticateToken, (req, res, next) => {
+router.get('/me', authenticateToken, async (req, res, next) => {
   try {
-    const user = db.prepare('SELECT id, email, name, role, created_at FROM users WHERE id = ?')
+    const user = await db.prepare('SELECT id, email, name, role, created_at FROM users WHERE id = ?')
       .get(req.user.id);
     
     if (!user) {
@@ -92,7 +92,7 @@ router.get('/me', authenticateToken, (req, res, next) => {
   }
 });
 
-router.get('/users', authenticateToken, (req, res, next) => {
+router.get('/users', authenticateToken, async (req, res, next) => {
   try {
     const users = db.prepare('SELECT id, name, email FROM users ORDER BY name ASC').all();
     res.json(users);

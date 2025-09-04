@@ -55,8 +55,7 @@ router.post('/',
     body('name').trim().notEmpty(),
     body('description').optional().trim()
     // body('due_date').optional().isISO8601() // Removed due_date as it's not in database schema
-  ],
-  (req, res, next) => {
+  ], async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -65,38 +64,38 @@ router.post('/',
 
       const { name, description } = req.body;
 
-      db.exec('BEGIN TRANSACTION');
+      await db.exec('BEGIN TRANSACTION');
       
       try {
-        const result = db.prepare(
+        const result = await db.prepare(
           'INSERT INTO projects (name, description, owner_id) VALUES (?, ?, ?)'
         ).run(name, description || null, req.user.id);
 
         const projectId = result.lastInsertRowid;
 
-        db.prepare(
+        await db.prepare(
           'INSERT INTO project_members (project_id, user_id, role) VALUES (?, ?, ?)'
         ).run(projectId, req.user.id, 'owner');
 
         const defaultColumns = ['To Do', 'In Progress', 'Review', 'Done'];
-        const boardResult = db.prepare(
+        const boardResult = await db.prepare(
           'INSERT INTO boards (name, project_id, position) VALUES (?, ?, ?)'
         ).run('Main Board', projectId, 0);
 
         const boardId = boardResult.lastInsertRowid;
 
         defaultColumns.forEach((columnName, index) => {
-          db.prepare(
+          await db.prepare(
             'INSERT INTO columns (name, board_id, position) VALUES (?, ?, ?)'
           ).run(columnName, boardId, index);
         });
 
-        db.exec('COMMIT');
+        await db.exec('COMMIT');
 
-        const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
+        const project = await db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
         res.status(201).json(project);
       } catch (error) {
-        db.exec('ROLLBACK');
+        await db.exec('ROLLBACK');
         throw error;
       }
     } catch (error) {
@@ -110,15 +109,14 @@ router.put('/:id',
     body('name').optional().trim().notEmpty(),
     body('description').optional().trim()
     // body('due_date').optional().isISO8601() // Removed due_date as it's not in database schema
-  ],
-  (req, res, next) => {
+  ], async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const isOwner = db.prepare(`
+      const isOwner = await db.prepare(`
         SELECT role FROM project_members 
         WHERE project_id = ? AND user_id = ? AND role IN ('owner', 'admin')
       `).get(req.params.id, req.user.id);
@@ -153,11 +151,11 @@ router.put('/:id',
       updates.push('updated_at = CURRENT_TIMESTAMP');
       values.push(req.params.id);
 
-      db.prepare(
+      await db.prepare(
         `UPDATE projects SET ${updates.join(', ')} WHERE id = ?`
       ).run(...values);
 
-      const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
+      const project = await db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
       res.json(project);
     } catch (error) {
       next(error);
@@ -165,9 +163,9 @@ router.put('/:id',
   }
 );
 
-router.delete('/:id', (req, res, next) => {
+router.delete('/:id', async (req, res, next) => {
   try {
-    const isOwner = db.prepare(`
+    const isOwner = await db.prepare(`
       SELECT role FROM project_members 
       WHERE project_id = ? AND user_id = ? AND role = 'owner'
     `).get(req.params.id, req.user.id);
@@ -176,16 +174,16 @@ router.delete('/:id', (req, res, next) => {
       return res.status(403).json({ error: 'Only project owner can delete project' });
     }
 
-    db.prepare('DELETE FROM projects WHERE id = ?').run(req.params.id);
+    await db.prepare('DELETE FROM projects WHERE id = ?').run(req.params.id);
     res.status(204).send();
   } catch (error) {
     next(error);
   }
 });
 
-router.get('/:id/members', (req, res, next) => {
+router.get('/:id/members', async (req, res, next) => {
   try {
-    const hasAccess = db.prepare(`
+    const hasAccess = await db.prepare(`
       SELECT 1 FROM project_members 
       WHERE project_id = ? AND user_id = ?
     `).get(req.params.id, req.user.id);
@@ -194,7 +192,7 @@ router.get('/:id/members', (req, res, next) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const members = db.prepare(`
+    const members = await db.prepare(`
       SELECT u.id, u.email, u.name, pm.role, pm.joined_at
       FROM project_members pm
       JOIN users u ON pm.user_id = u.id
@@ -209,15 +207,14 @@ router.get('/:id/members', (req, res, next) => {
 });
 
 router.post('/:id/members',
-  [body('email').isEmail().normalizeEmail()],
-  (req, res, next) => {
+  [body('email').isEmail().normalizeEmail()], async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const isAdmin = db.prepare(`
+      const isAdmin = await db.prepare(`
         SELECT role FROM project_members 
         WHERE project_id = ? AND user_id = ? AND role IN ('owner', 'admin')
       `).get(req.params.id, req.user.id);
@@ -226,12 +223,12 @@ router.post('/:id/members',
         return res.status(403).json({ error: 'Insufficient permissions' });
       }
 
-      const user = db.prepare('SELECT id FROM users WHERE email = ?').get(req.body.email);
+      const user = await db.prepare('SELECT id FROM users WHERE email = ?').get(req.body.email);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      const existingMember = db.prepare(
+      const existingMember = await db.prepare(
         'SELECT * FROM project_members WHERE project_id = ? AND user_id = ?'
       ).get(req.params.id, user.id);
 
@@ -239,7 +236,7 @@ router.post('/:id/members',
         return res.status(409).json({ error: 'User already a member' });
       }
 
-      db.prepare(
+      await db.prepare(
         'INSERT INTO project_members (project_id, user_id, role) VALUES (?, ?, ?)'
       ).run(req.params.id, user.id, 'member');
 

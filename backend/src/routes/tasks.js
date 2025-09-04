@@ -7,10 +7,10 @@ const router = express.Router();
 
 router.use(authenticateToken);
 
-const checkTaskAccess = (req, res, next) => {
+const checkTaskAccess = async (req, res, next) => {
   const taskId = req.params.id;
   
-  const task = db.prepare(`
+  const task = await db.prepare(`
     SELECT t.*, c.board_id, b.project_id
     FROM tasks t
     JOIN columns c ON t.column_id = c.id
@@ -22,7 +22,7 @@ const checkTaskAccess = (req, res, next) => {
     return res.status(404).json({ error: 'Task not found' });
   }
 
-  const hasAccess = db.prepare(`
+  const hasAccess = await db.prepare(`
     SELECT 1 FROM project_members 
     WHERE project_id = ? AND user_id = ?
   `).get(task.project_id, req.user.id);
@@ -35,7 +35,7 @@ const checkTaskAccess = (req, res, next) => {
   next();
 };
 
-router.get('/search/global', (req, res, next) => {
+router.get('/search/global', async (req, res, next) => {
   try {
     const { q, status, priority, assigneeId } = req.query;
 
@@ -76,14 +76,14 @@ router.get('/search/global', (req, res, next) => {
 
     query += ` ORDER BY t.updated_at DESC LIMIT 100`;
 
-    const tasks = db.prepare(query).all(...params);
+    const tasks = await db.prepare(query).all(...params);
     res.json(tasks);
   } catch (error) {
     next(error);
   }
 });
 
-router.get('/search', (req, res, next) => {
+router.get('/search', async (req, res, next) => {
   try {
     const { q, projectId, status, priority, assigneeId } = req.query;
 
@@ -91,7 +91,7 @@ router.get('/search', (req, res, next) => {
       return res.status(400).json({ error: 'Project ID required' });
     }
 
-    const hasAccess = db.prepare(`
+    const hasAccess = await db.prepare(`
       SELECT 1 FROM project_members 
       WHERE project_id = ? AND user_id = ?
     `).get(projectId, req.user.id);
@@ -134,16 +134,16 @@ router.get('/search', (req, res, next) => {
 
     query += ` ORDER BY t.created_at DESC`;
 
-    const tasks = db.prepare(query).all(...params);
+    const tasks = await db.prepare(query).all(...params);
     res.json(tasks);
   } catch (error) {
     next(error);
   }
 });
 
-router.get('/my-tasks', (req, res, next) => {
+router.get('/my-tasks', async (req, res, next) => {
   try {
-    const tasks = db.prepare(`
+    const tasks = await db.prepare(`
       SELECT t.*, p.name as project_name, c.name as column_name, b.name as board_name
       FROM tasks t
       JOIN columns c ON t.column_id = c.id
@@ -168,9 +168,9 @@ router.get('/my-tasks', (req, res, next) => {
   }
 });
 
-router.get('/my-stats', (req, res, next) => {
+router.get('/my-stats', async (req, res, next) => {
   try {
-    const totalTasks = db.prepare(`
+    const totalTasks = await db.prepare(`
       SELECT COUNT(*) as count
       FROM tasks t
       JOIN columns c ON t.column_id = c.id
@@ -179,7 +179,7 @@ router.get('/my-stats', (req, res, next) => {
       WHERE t.assignee_id = ? AND pm.user_id = ?
     `).get(req.user.id, req.user.id);
 
-    const tasksByStatus = db.prepare(`
+    const tasksByStatus = await db.prepare(`
       SELECT c.name as status, COUNT(t.id) as count
       FROM tasks t
       JOIN columns c ON t.column_id = c.id
@@ -196,7 +196,7 @@ router.get('/my-stats', (req, res, next) => {
         END
     `).all(req.user.id, req.user.id);
 
-    const tasksByPriority = db.prepare(`
+    const tasksByPriority = await db.prepare(`
       SELECT t.priority, COUNT(*) as count
       FROM tasks t
       JOIN columns c ON t.column_id = c.id
@@ -206,7 +206,7 @@ router.get('/my-stats', (req, res, next) => {
       GROUP BY t.priority
     `).all(req.user.id, req.user.id);
 
-    const overdueTasks = db.prepare(`
+    const overdueTasks = await db.prepare(`
       SELECT COUNT(*) as count
       FROM tasks t
       JOIN columns c ON t.column_id = c.id
@@ -217,7 +217,7 @@ router.get('/my-stats', (req, res, next) => {
         AND c.name != 'Done'
     `).get(req.user.id, req.user.id);
 
-    const upcomingTasks = db.prepare(`
+    const upcomingTasks = await db.prepare(`
       SELECT COUNT(*) as count
       FROM tasks t
       JOIN columns c ON t.column_id = c.id
@@ -228,7 +228,7 @@ router.get('/my-stats', (req, res, next) => {
         AND c.name != 'Done'
     `).get(req.user.id, req.user.id);
 
-    const completedThisWeek = db.prepare(`
+    const completedThisWeek = await db.prepare(`
       SELECT COUNT(*) as count
       FROM tasks t
       JOIN columns c ON t.column_id = c.id
@@ -252,9 +252,9 @@ router.get('/my-stats', (req, res, next) => {
   }
 });
 
-router.get('/stats/:projectId', (req, res, next) => {
+router.get('/stats/:projectId', async (req, res, next) => {
   try {
-    const hasAccess = db.prepare(`
+    const hasAccess = await db.prepare(`
       SELECT 1 FROM project_members 
       WHERE project_id = ? AND user_id = ?
     `).get(req.params.projectId, req.user.id);
@@ -263,7 +263,7 @@ router.get('/stats/:projectId', (req, res, next) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const totalTasks = db.prepare(`
+    const totalTasks = await db.prepare(`
       SELECT COUNT(*) as count
       FROM tasks t
       JOIN columns c ON t.column_id = c.id
@@ -271,7 +271,7 @@ router.get('/stats/:projectId', (req, res, next) => {
       WHERE b.project_id = ?
     `).get(req.params.projectId);
 
-    const tasksByStatus = db.prepare(`
+    const tasksByStatus = await db.prepare(`
       SELECT c.name as status, COUNT(t.id) as count
       FROM columns c
       JOIN boards b ON c.board_id = b.id
@@ -281,7 +281,7 @@ router.get('/stats/:projectId', (req, res, next) => {
       ORDER BY c.position
     `).all(req.params.projectId);
 
-    const tasksByPriority = db.prepare(`
+    const tasksByPriority = await db.prepare(`
       SELECT t.priority, COUNT(*) as count
       FROM tasks t
       JOIN columns c ON t.column_id = c.id
@@ -290,7 +290,7 @@ router.get('/stats/:projectId', (req, res, next) => {
       GROUP BY t.priority
     `).all(req.params.projectId);
 
-    const tasksByAssignee = db.prepare(`
+    const tasksByAssignee = await db.prepare(`
       SELECT u.name as assignee, COUNT(t.id) as count
       FROM tasks t
       JOIN columns c ON t.column_id = c.id
@@ -300,7 +300,7 @@ router.get('/stats/:projectId', (req, res, next) => {
       GROUP BY t.assignee_id, u.name
     `).all(req.params.projectId);
 
-    const overdueTasks = db.prepare(`
+    const overdueTasks = await db.prepare(`
       SELECT COUNT(*) as count
       FROM tasks t
       JOIN columns c ON t.column_id = c.id
@@ -331,15 +331,14 @@ router.post('/',
     body('assigneeId').optional().isInt(),
     body('dueDate').optional().isISO8601(),
     body('diaryEntryId').optional().isInt()
-  ],
-  (req, res, next) => {
+  ], async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const column = db.prepare(`
+      const column = await db.prepare(`
         SELECT c.*, b.project_id 
         FROM columns c
         JOIN boards b ON c.board_id = b.id
@@ -350,7 +349,7 @@ router.post('/',
         return res.status(404).json({ error: 'Column not found' });
       }
 
-      const hasAccess = db.prepare(`
+      const hasAccess = await db.prepare(`
         SELECT 1 FROM project_members 
         WHERE project_id = ? AND user_id = ?
       `).get(column.project_id, req.user.id);
@@ -359,7 +358,7 @@ router.post('/',
         return res.status(403).json({ error: 'Access denied' });
       }
 
-      const maxPosition = db.prepare(
+      const maxPosition = await db.prepare(
         'SELECT MAX(position) as max FROM tasks WHERE column_id = ?'
       ).get(req.body.columnId);
 
@@ -367,7 +366,7 @@ router.post('/',
 
       // Creating task
 
-      const result = db.prepare(`
+      const result = await db.prepare(`
         INSERT INTO tasks (title, description, priority, column_id, assignee_id, due_date, position, diary_entry_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
@@ -383,7 +382,7 @@ router.post('/',
       
       // Task created successfully
 
-      const task = db.prepare(`
+      const task = await db.prepare(`
         SELECT t.*, u.name as assignee_name, u.email as assignee_email,
           de.title as diary_entry_title, de.date as diary_entry_date
         FROM tasks t
@@ -408,8 +407,7 @@ router.put('/:id',
     body('dueDate').optional().isISO8601(),
     body('projectId').optional().isInt().toInt()
   ],
-  checkTaskAccess,
-  (req, res, next) => {
+  checkTaskAccess, async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -419,7 +417,7 @@ router.put('/:id',
       // Handle project change if requested
       if (req.body.projectId !== undefined) {
         // Check if user has access to the new project
-        const newProjectAccess = db.prepare(`
+        const newProjectAccess = await db.prepare(`
           SELECT 1 FROM project_members 
           WHERE project_id = ? AND user_id = ?
         `).get(req.body.projectId, req.user.id);
@@ -429,7 +427,7 @@ router.put('/:id',
         }
 
         // Find the default board and first column in the new project
-        const newProjectBoard = db.prepare(`
+        const newProjectBoard = await db.prepare(`
           SELECT b.id as board_id, c.id as column_id
           FROM boards b
           JOIN columns c ON c.board_id = b.id
@@ -443,13 +441,13 @@ router.put('/:id',
         }
 
         // Move task to the first column of the new project
-        const maxPosition = db.prepare(
+        const maxPosition = await db.prepare(
           'SELECT MAX(position) as max FROM tasks WHERE column_id = ?'
         ).get(newProjectBoard.column_id);
 
         const newPosition = (maxPosition.max || 0) + 1;
 
-        db.prepare(`
+        await db.prepare(`
           UPDATE tasks 
           SET column_id = ?, position = ?, updated_at = CURRENT_TIMESTAMP
           WHERE id = ?
@@ -472,14 +470,14 @@ router.put('/:id',
         updates.push('updated_at = CURRENT_TIMESTAMP');
         values.push(req.params.id);
 
-        db.prepare(
+        await db.prepare(
           `UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`
         ).run(...values);
       } else if (req.body.projectId === undefined) {
         return res.status(400).json({ error: 'No valid updates provided' });
       }
 
-      const task = db.prepare(`
+      const task = await db.prepare(`
         SELECT t.*, u.name as assignee_name, u.email as assignee_email
         FROM tasks t
         LEFT JOIN users u ON t.assignee_id = u.id
@@ -498,15 +496,14 @@ router.put('/:id/move',
     body('columnId').isInt(),
     body('position').optional().isInt()
   ],
-  checkTaskAccess,
-  (req, res, next) => {
+  checkTaskAccess, async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const newColumn = db.prepare(`
+      const newColumn = await db.prepare(`
         SELECT c.*, b.project_id 
         FROM columns c
         JOIN boards b ON c.board_id = b.id
@@ -521,7 +518,7 @@ router.put('/:id/move',
         return res.status(400).json({ error: 'Cannot move task to different project' });
       }
 
-      db.exec('BEGIN TRANSACTION');
+      await db.exec('BEGIN TRANSACTION');
 
       try {
         const oldColumnId = req.task.column_id;
@@ -531,20 +528,20 @@ router.put('/:id/move',
           const newPosition = req.body.position ?? 0;
           
           if (newPosition > oldPosition) {
-            db.prepare(`
+            await db.prepare(`
               UPDATE tasks 
               SET position = position - 1 
               WHERE column_id = ? AND position > ? AND position <= ?
             `).run(oldColumnId, oldPosition, newPosition);
           } else if (newPosition < oldPosition) {
-            db.prepare(`
+            await db.prepare(`
               UPDATE tasks 
               SET position = position + 1 
               WHERE column_id = ? AND position >= ? AND position < ?
             `).run(oldColumnId, newPosition, oldPosition);
           }
 
-          db.prepare('UPDATE tasks SET position = ? WHERE id = ?')
+          await db.prepare('UPDATE tasks SET position = ? WHERE id = ?')
             .run(newPosition, req.params.id);
         } else {
           db.prepare(`
@@ -555,17 +552,17 @@ router.put('/:id/move',
 
           const newPosition = req.body.position ?? 0;
           
-          db.prepare(`
+          await db.prepare(`
             UPDATE tasks 
             SET position = position + 1 
             WHERE column_id = ? AND position >= ?
           `).run(req.body.columnId, newPosition);
 
-          db.prepare('UPDATE tasks SET column_id = ?, position = ? WHERE id = ?')
+          await db.prepare('UPDATE tasks SET column_id = ?, position = ? WHERE id = ?')
             .run(req.body.columnId, newPosition, req.params.id);
         }
 
-        db.exec('COMMIT');
+        await db.exec('COMMIT');
 
         const task = db.prepare(`
           SELECT t.*, u.name as assignee_name, u.email as assignee_email
@@ -576,7 +573,7 @@ router.put('/:id/move',
 
         res.json(task);
       } catch (error) {
-        db.exec('ROLLBACK');
+        await db.exec('ROLLBACK');
         throw error;
       }
     } catch (error) {
@@ -585,9 +582,9 @@ router.put('/:id/move',
   }
 );
 
-router.delete('/:id', checkTaskAccess, (req, res, next) => {
+router.delete('/:id', checkTaskAccess, async (req, res, next) => {
   try {
-    db.prepare('DELETE FROM tasks WHERE id = ?').run(req.params.id);
+    await db.prepare('DELETE FROM tasks WHERE id = ?').run(req.params.id);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -595,10 +592,10 @@ router.delete('/:id', checkTaskAccess, (req, res, next) => {
 });
 
 // Task relationships endpoints
-router.get('/:id/dependencies', checkTaskAccess, (req, res, next) => {
+router.get('/:id/dependencies', checkTaskAccess, async (req, res, next) => {
   try {
     // Get tasks that this task depends on (blockers)
-    const blockedBy = db.prepare(`
+    const blockedBy = await db.prepare(`
       SELECT t.id, t.title, t.status, c.name as column_name, u.name as assignee_name
       FROM task_dependencies td
       JOIN tasks t ON td.depends_on_task_id = t.id
@@ -608,7 +605,7 @@ router.get('/:id/dependencies', checkTaskAccess, (req, res, next) => {
     `).all(req.params.id);
 
     // Get tasks that depend on this task (blocking)
-    const blocking = db.prepare(`
+    const blocking = await db.prepare(`
       SELECT t.id, t.title, t.status, c.name as column_name, u.name as assignee_name
       FROM task_dependencies td
       JOIN tasks t ON td.task_id = t.id
@@ -627,8 +624,7 @@ router.post('/:id/dependencies',
   [
     body('dependsOnTaskId').isInt().toInt()
   ],
-  checkTaskAccess, 
-  (req, res, next) => {
+  checkTaskAccess, async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -644,7 +640,7 @@ router.post('/:id/dependencies',
       }
 
       // Check if the dependency target task exists and user has access
-      const targetTask = db.prepare(`
+      const targetTask = await db.prepare(`
         SELECT t.*, c.board_id, b.project_id
         FROM tasks t
         JOIN columns c ON t.column_id = c.id
@@ -656,7 +652,7 @@ router.post('/:id/dependencies',
         return res.status(404).json({ error: 'Target task not found' });
       }
 
-      const hasAccessToTarget = db.prepare(`
+      const hasAccessToTarget = await db.prepare(`
         SELECT 1 FROM project_members 
         WHERE project_id = ? AND user_id = ?
       `).get(targetTask.project_id, req.user.id);
@@ -673,7 +669,7 @@ router.post('/:id/dependencies',
 
       // Create the dependency
       try {
-        db.prepare(`
+        await db.prepare(`
           INSERT INTO task_dependencies (task_id, depends_on_task_id)
           VALUES (?, ?)
         `).run(taskId, dependsOnTaskId);
@@ -691,9 +687,9 @@ router.post('/:id/dependencies',
   }
 );
 
-router.delete('/:id/dependencies/:dependencyId', checkTaskAccess, (req, res, next) => {
+router.delete('/:id/dependencies/:dependencyId', checkTaskAccess, async (req, res, next) => {
   try {
-    const result = db.prepare(`
+    const result = await db.prepare(`
       DELETE FROM task_dependencies 
       WHERE task_id = ? AND depends_on_task_id = ?
     `).run(req.params.id, req.params.dependencyId);
@@ -720,7 +716,7 @@ function checkForCircularDependency(startTaskId, targetTaskId, visited = new Set
   
   visited.add(startTaskId);
   
-  const dependencies = db.prepare(`
+  const dependencies = await db.prepare(`
     SELECT depends_on_task_id FROM task_dependencies WHERE task_id = ?
   `).all(startTaskId);
   

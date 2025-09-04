@@ -12,7 +12,7 @@ router.get('/', [
   query('start').optional().isISO8601(),
   query('end').optional().isISO8601(),
   query('project_id').optional().isInt()
-], (req, res, next) => {
+], async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -46,7 +46,7 @@ router.get('/', [
 
     query += ' ORDER BY e.start_date ASC';
 
-    const events = db.prepare(query).all(...params);
+    const events = await db.prepare(query).all(...params);
     // Convert all_day from integer to boolean
     const eventsWithBoolean = events.map(event => ({
       ...event,
@@ -61,14 +61,14 @@ router.get('/', [
 // Get a specific event
 router.get('/:id', [
   param('id').isInt()
-], (req, res, next) => {
+], async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const event = db.prepare(`
+    const event = await db.prepare(`
       SELECT e.*, p.name as project_name 
       FROM events e
       LEFT JOIN projects p ON e.project_id = p.id
@@ -88,14 +88,14 @@ router.get('/:id', [
 });
 
 // Create a new event
-router.post('/', (req, res, next) => {
+router.post('/', async (req, res, next) => {
   // Processing event creation request
   try {
     // Validation temporarily removed
 
     // Validate project access if project_id is provided
     if (req.body.project_id) {
-      const hasAccess = db.prepare(`
+      const hasAccess = await db.prepare(`
         SELECT 1 FROM project_members 
         WHERE project_id = ? AND user_id = ?
       `).get(req.body.project_id, req.user.id);
@@ -126,12 +126,12 @@ router.post('/', (req, res, next) => {
     
     // Event data prepared for insertion
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO events (title, description, start_date, end_date, all_day, event_type, priority, project_id, user_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(...insertValues);
 
-    const event = db.prepare(`
+    const event = await db.prepare(`
       SELECT e.*, p.name as project_name 
       FROM events e
       LEFT JOIN projects p ON e.project_id = p.id
@@ -157,7 +157,7 @@ router.put('/:id', [
   body('event_type').optional().isIn(['event', 'deadline', 'meeting', 'reminder']),
   body('priority').optional().isIn(['low', 'medium', 'high', 'urgent']),
   body('project_id').optional().isInt()
-], (req, res, next) => {
+], async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -165,14 +165,14 @@ router.put('/:id', [
     }
 
     // Check if event exists and user owns it
-    const existingEvent = db.prepare('SELECT * FROM events WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
+    const existingEvent = await db.prepare('SELECT * FROM events WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
     if (!existingEvent) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
     // Validate project access if project_id is being changed
     if (req.body.project_id !== undefined && req.body.project_id !== null) {
-      const hasAccess = db.prepare(`
+      const hasAccess = await db.prepare(`
         SELECT 1 FROM project_members 
         WHERE project_id = ? AND user_id = ?
       `).get(req.body.project_id, req.user.id);
@@ -206,9 +206,9 @@ router.put('/:id', [
     updates.push('updated_at = CURRENT_TIMESTAMP');
     values.push(req.params.id);
 
-    db.prepare(`UPDATE events SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+    await db.prepare(`UPDATE events SET ${updates.join(', ')} WHERE id = ?`).run(...values);
 
-    const event = db.prepare(`
+    const event = await db.prepare(`
       SELECT e.*, p.name as project_name 
       FROM events e
       LEFT JOIN projects p ON e.project_id = p.id
@@ -226,14 +226,14 @@ router.put('/:id', [
 // Delete an event
 router.delete('/:id', [
   param('id').isInt()
-], (req, res, next) => {
+], async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const result = db.prepare('DELETE FROM events WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+    const result = await db.prepare('DELETE FROM events WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
     
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Event not found' });

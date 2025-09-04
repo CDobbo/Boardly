@@ -12,8 +12,7 @@ router.get('/',
     query('date').optional().isISO8601(),
     query('category').optional().isIn(['meeting', 'action', 'note', 'decision', 'follow-up']),
     query('search').optional().trim()
-  ],
-  (req, res, next) => {
+  ], async (req, res, next) => {
     // Diary API accessed
     try {
       const errors = validationResult(req);
@@ -45,11 +44,11 @@ router.get('/',
 
       sql += ' ORDER BY date DESC, created_at DESC';
 
-      const entries = db.prepare(sql).all(...params);
+      const entries = await db.prepare(sql).all(...params);
       
       // Add linked tasks to each diary entry
       const entriesWithTasks = entries.map(entry => {
-        const linkedTasks = db.prepare(`
+        const linkedTasks = await db.prepare(`
           SELECT t.id, t.title, t.priority, c.name as column_name, p.name as project_name
           FROM tasks t
           LEFT JOIN columns c ON t.column_id = c.id
@@ -82,9 +81,9 @@ router.get('/',
   }
 );
 
-router.get('/by-date', (req, res, next) => {
+router.get('/by-date', async (req, res, next) => {
   try {
-    const entriesByDate = db.prepare(`
+    const entriesByDate = await db.prepare(`
       SELECT 
         date,
         COUNT(*) as count,
@@ -108,8 +107,7 @@ router.post('/',
     body('content').trim().notEmpty().withMessage('Content is required'),
     body('category').isIn(['meeting', 'action', 'note', 'decision', 'follow-up']).withMessage('Invalid category'),
     body('date').isISO8601().withMessage('Valid date is required')
-  ],
-  (req, res, next) => {
+  ], async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -118,12 +116,12 @@ router.post('/',
 
       const { title, content, category, date } = req.body;
 
-      const result = db.prepare(`
+      const result = await db.prepare(`
         INSERT INTO diary_entries (title, content, category, date, user_id)
         VALUES (?, ?, ?, ?, ?)
       `).run(title, content, category, date, req.user.id);
 
-      const entry = db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(result.lastInsertRowid);
+      const entry = await db.prepare('SELECT * FROM diary_entries WHERE id = ?').get(result.lastInsertRowid);
       res.status(201).json(entry);
     } catch (error) {
       next(error);
@@ -131,9 +129,9 @@ router.post('/',
   }
 );
 
-router.get('/:id', (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
   try {
-    const entry = db.prepare(`
+    const entry = await db.prepare(`
       SELECT * FROM diary_entries 
       WHERE id = ? AND user_id = ?
     `).get(req.params.id, req.user.id);
@@ -154,15 +152,14 @@ router.put('/:id',
     body('content').optional().trim().notEmpty(),
     body('category').optional().isIn(['meeting', 'action', 'note', 'decision', 'follow-up']),
     body('date').optional().isISO8601()
-  ],
-  (req, res, next) => {
+  ], async (req, res, next) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const entry = db.prepare(`
+      const entry = await db.prepare(`
         SELECT * FROM diary_entries 
         WHERE id = ? AND user_id = ?
       `).get(req.params.id, req.user.id);
@@ -188,13 +185,13 @@ router.put('/:id',
       updates.push('updated_at = CURRENT_TIMESTAMP');
       values.push(req.params.id, req.user.id);
 
-      db.prepare(`
+      await db.prepare(`
         UPDATE diary_entries 
         SET ${updates.join(', ')} 
         WHERE id = ? AND user_id = ?
       `).run(...values);
 
-      const updatedEntry = db.prepare(`
+      const updatedEntry = await db.prepare(`
         SELECT * FROM diary_entries 
         WHERE id = ? AND user_id = ?
       `).get(req.params.id, req.user.id);
@@ -206,9 +203,9 @@ router.put('/:id',
   }
 );
 
-router.delete('/:id', (req, res, next) => {
+router.delete('/:id', async (req, res, next) => {
   try {
-    const entry = db.prepare(`
+    const entry = await db.prepare(`
       SELECT * FROM diary_entries 
       WHERE id = ? AND user_id = ?
     `).get(req.params.id, req.user.id);

@@ -37,7 +37,7 @@ const requireAdmin = async (req, res, next) => {
     // Checking user role in database
     try {
       const { db } = await import('../db/index.js');
-      const user = db.prepare('SELECT role FROM users WHERE id = ?').get(req.user.id);
+      const user = await db.prepare('SELECT role FROM users WHERE id = ?').get(req.user.id);
       console.log('Database user role:', user?.role);
       if (user) {
         req.user.role = user.role;
@@ -272,7 +272,7 @@ router.get('/results', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Check test run status
-router.get('/status', authenticateToken, requireAdmin, (req, res) => {
+router.get('/status', authenticateToken, requireAdmin, async (req, res) => {
   res.json({
     running: testRunStatus.running,
     startTime: testRunStatus.startTime
@@ -395,7 +395,7 @@ router.post('/run', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Stop running tests
-router.post('/stop', authenticateToken, requireAdmin, (req, res) => {
+router.post('/stop', authenticateToken, requireAdmin, async (req, res) => {
   if (!testRunStatus.running || !testRunStatus.process) {
     return res.status(400).json({
       error: 'No tests are currently running'
