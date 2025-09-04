@@ -662,7 +662,7 @@ router.post('/:id/dependencies',
       }
 
       // Check for circular dependencies
-      const wouldCreateCycle = checkForCircularDependency(dependsOnTaskId, taskId);
+      const wouldCreateCycle = await checkForCircularDependency(dependsOnTaskId, taskId);
       if (wouldCreateCycle) {
         return res.status(400).json({ error: 'This would create a circular dependency' });
       }
@@ -705,7 +705,7 @@ router.delete('/:id/dependencies/:dependencyId', checkTaskAccess, async (req, re
 });
 
 // Helper function to check for circular dependencies
-function checkForCircularDependency(startTaskId, targetTaskId, visited = new Set()) {
+async function checkForCircularDependency(startTaskId, targetTaskId, visited = new Set()) {
   if (startTaskId === targetTaskId) {
     return true;
   }
@@ -721,7 +721,7 @@ function checkForCircularDependency(startTaskId, targetTaskId, visited = new Set
   `).all(startTaskId);
   
   for (const dep of dependencies) {
-    if (checkForCircularDependency(dep.depends_on_task_id, targetTaskId, visited)) {
+    if (await checkForCircularDependency(dep.depends_on_task_id, targetTaskId, visited)) {
       return true;
     }
   }

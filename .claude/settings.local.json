@@ -29,7 +29,11 @@
       "Bash(git remote set-url:*)",
       "Bash(npx vercel:*)",
       "Bash(sed:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(for file in src/routes/*.js)",
+      "Bash(do echo \"Checking $file\")",
+      "Bash(echo:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": [],
